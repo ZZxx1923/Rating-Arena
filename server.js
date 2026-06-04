@@ -13,7 +13,9 @@ const db = mysql.createConnection({
     host:     process.env.DB_HOST || "localhost",
     user:     process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "employee_system"
+    database: process.env.DB_NAME || "employee_system",
+    port:     process.env.DB_PORT || 3306,
+    ssl:      process.env.DB_HOST !== "localhost" ? { rejectUnauthorized: false } : null
 });
 
 db.connect((err) => {
