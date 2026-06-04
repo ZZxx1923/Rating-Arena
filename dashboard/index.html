@@ -401,7 +401,8 @@
     ════════════════════════════════════ */
     // استخدم هذا الرابط للتطوير المحلي
     // عند الرفع على Render، غير الرابط إلى: https://your-render-app-name.onrender.com
-    const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'http://localhost:3000';
+    // استخدم رابط Render الخاص بك للإنتاج
+const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://arena-server-c8xo.onrender.com';
     // للإنتاج (Production)، استخدم:
     // const API = 'https://your-render-app-name.onrender.com';
     let evaluations    = [];
