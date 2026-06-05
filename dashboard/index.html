@@ -431,9 +431,10 @@
     ════════════════════════════════════ */
     // استخدم هذا الرابط للتطوير المحلي
     // عند الرفع على Render، غير الرابط إلى: https://your-render-app-name.onrender.com
-    const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'http://localhost:3000';
-    // للإنتاج (Production)، استخدم:
-    // const API = 'https://your-render-app-name.onrender.com';
+    // ملاحظة: الرابط يتغير تلقائياً بناءً على مكان تشغيل الموقع
+    const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                ? 'http://localhost:3000' 
+                : 'https://arena-server-c8xo.onrender.com'; // تم تحديث الرابط للسيرفر الفعلي على Render
     let evaluations    = [];
     let currentAdminTab = 'pending';
     let currentUser    = { role: 'admin', name: 'Khalid', initials: 'KH' };
