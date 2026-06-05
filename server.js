@@ -180,28 +180,47 @@ app.delete("/users/:id", (req, res) => {
    EVALUATIONS
 ════════════════════════════════ */
 app.get("/evaluations", (req, res) => {
-    db.query(
-        "SELECT * FROM evaluations ORDER BY createdAt DESC",
-        (err, result) => {
-            if (err) return res.status(500).json({ message: "خطأ" });
-            res.json(result);
+    db.query("SELECT * FROM evaluations ORDER BY created_at DESC", (err, results) => {
+        if (err) {
+            console.error("Fetch Eval Error:", err);
+            return res.status(500).json({ error: err.message });
         }
-    );
+        // التأكد من تحويل scores من نص إلى JSON إذا لزم الأمر
+        const processed = results.map(row => {
+            if (typeof row.scores === 'string') {
+                try { row.scores = JSON.parse(row.scores); } catch(e) { row.scores = {}; }
+            }
+            return row;
+        });
+        res.json(processed);
+    });
 });
+
 
 app.post("/evaluations", (req, res) => {
-    const { targetName, avgScore, comment, status, submittedBy, isAnonymous } = req.body;
-    if (!targetName) return res.json({ success: false, message: "بيانات ناقصة" });
-
-    db.query(
-        "INSERT INTO evaluations (targetName, avgScore, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?)",
-        [targetName, avgScore || 0, comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0],
-        (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: "فشل الحفظ" });
-            res.json({ success: true, id: result.insertId });
+    const { target_type, target_name, evaluator_name, scores, comment, status } = req.body;
+    
+    // تحويل التقييمات إلى نص لحفظها في قاعدة البيانات
+    const scoresStr = JSON.stringify(scores || {});
+    
+    const sql = "INSERT INTO evaluations (target_type, target_name, evaluator_name, scores, comment, status) VALUES (?, ?, ?, ?, ?, ?)";
+    
+    db.query(sql, [
+        target_type || 'employee', 
+        target_name, 
+        evaluator_name || 'Anonymous', 
+        scoresStr, 
+        comment || '', 
+        status || 'pending'
+    ], (err, result) => {
+        if (err) {
+            console.error("Insert Eval Error:", err);
+            return res.status(500).json({ error: err.message });
         }
-    );
+        res.json({ success: true, id: result.insertId });
+    });
 });
+
 
 app.patch("/evaluations/:id", (req, res) => {
     const { status, rejectionReason } = req.body;
