@@ -217,7 +217,7 @@ body::before {
 @media (max-width: 768px) {
   .fimro-sidebar {
     width: 100%;
-    height: 60px;
+    height: 70px;
     top: auto;
     bottom: 0;
     flex-direction: row;
@@ -231,16 +231,17 @@ body::before {
     margin-bottom: 0;
     width: 50px;
     height: 50px;
+    font-size: 18px;
   }
   
   .fimro-main {
     margin-left: 0 !important;
     margin-right: 0 !important;
-    padding: 100px 20px 80px;
+    padding: 100px 16px 90px;
   }
   
   .header-container {
-    padding: 0 16px;
+    padding: 0 12px;
   }
   
   .arena-text {
@@ -248,21 +249,195 @@ body::before {
   }
   
   .multistep-card {
-    padding: 24px;
+    padding: 20px;
+    border-radius: 24px;
   }
   
   .eval-options-grid-fimro {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .opt-box {
+    padding: 20px;
   }
   
   .fimro-rating-numbers {
-    gap: 5px;
+    gap: 6px;
+    justify-content: center;
+  }
+  
+  .fimro-rating-numbers label {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+    padding: 0;
+  }
+  
+  .quality-item {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .quality-item label {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .step-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .fimro-table {
+    font-size: 12px;
+  }
+  
+  .fimro-table th,
+  .fimro-table td {
+    padding: 12px 8px;
+  }
+  
+  .btn-approve,
+  .btn-reject {
+    padding: 6px 12px;
+    font-size: 12px;
+    width: 100%;
+  }
+  
+  .modal-content {
+    padding: 24px;
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .modal-close {
+    align-self: flex-end;
+  }
+  
+  .eval-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .detail-item,
+  .detail-section {
+    padding: 12px;
+  }
+  
+  .detail-item label,
+  .detail-section label {
+    font-size: 11px;
+  }
+  
+  .detail-item p,
+  .detail-section p {
+    font-size: 14px;
+  }
+  
+  .eval-grid-fimro {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .fimro-card-eval {
+    padding: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .fimro-input,
+  .fimro-select,
+  .fimro-textarea {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fimro-header {
+    height: 70px;
+  }
+  
+  .header-container {
+    padding: 0 10px;
+  }
+  
+  .lang-toggle-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .fimro-main {
+    padding: 90px 12px 90px;
+  }
+  
+  .multistep-card {
+    padding: 16px;
+    margin: 0 auto;
+  }
+  
+  .card {
+    padding: 16px;
+    margin-bottom: 16px;
   }
   
   .fimro-rating-numbers label {
     width: 36px;
     height: 36px;
-    font-size: 14px;
+    font-size: 12px;
+  }
+  
+  .modal-content {
+    padding: 16px;
+    width: 98%;
+  }
+  
+  .modal-header h2 {
+    font-size: 18px;
+  }
+  
+  .fimro-table {
+    font-size: 11px;
+  }
+  
+  .fimro-table th,
+  .fimro-table td {
+    padding: 8px 4px;
+  }
+  
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .eval-grid-fimro {
+    gap: 12px;
+  }
+  
+  .fimro-card-eval {
+    padding: 12px;
+  }
+  
+  .opt-box {
+    padding: 16px;
   }
 }
 

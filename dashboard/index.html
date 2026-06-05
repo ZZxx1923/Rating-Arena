@@ -361,24 +361,28 @@
       <div class="modal-body">
         <div class="eval-details-grid">
           <div class="detail-item">
-            <label>الهدف</label>
+            <label data-ar="الشخص اللي تقيم" data-en="Rated Person">الشخص اللي تقيم</label>
             <p id="modalTarget">–</p>
           </div>
           <div class="detail-item">
-            <label>النتيجة</label>
-            <p id="modalScore">–</p>
+            <label data-ar="عدد التقييمات" data-en="Number of Ratings">عدد التقييمات</label>
+            <p id="modalRatingCount">–</p>
           </div>
           <div class="detail-item">
-            <label>الحالة</label>
-            <p id="modalStatus">–</p>
-          </div>
-          <div class="detail-item">
-            <label>المقيم</label>
+            <label data-ar="المقيم" data-en="Rated By">المقيم</label>
             <p id="modalSubmittedBy">–</p>
+          </div>
+          <div class="detail-item">
+            <label data-ar="التاريخ" data-en="Date">التاريخ</label>
+            <p id="modalDate">–</p>
           </div>
         </div>
         <div class="detail-section">
-          <label>الملاحظات</label>
+          <label data-ar="الأسئلة والدرجات" data-en="Questions & Ratings">الأسئلة والدرجات</label>
+          <div id="modalQuestionsRatings" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 12px;">–</div>
+        </div>
+        <div class="detail-section">
+          <label data-ar="الملاحظات" data-en="Comments">الملاحظات</label>
           <p id="modalComment" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">–</p>
         </div>
         <div class="detail-section" id="missingQuestionsSection" style="display:none;">
@@ -535,6 +539,17 @@
         label.textContent = (lang === 'en') ? enText : arText;
       });
 
+      // Reload employees and departments lists to reflect language changes
+      if (document.getElementById('employees-list')) {
+        loadEmployees();
+      }
+      if (document.getElementById('departments-list')) {
+        loadDepartments();
+      }
+      if (document.getElementById('dynamic-questions-container')) {
+        loadFormQuestions();
+      }
+
       updateEvalTargetUI();
     }
     function toggleLanguage() {
@@ -582,11 +597,17 @@
         if (target === "employee") {
           const res = await fetch(`${API}/employees`);
           const employees = await res.json();
-          employees.forEach(e => dropdown.add(new Option(e.name, e.name)));
+          employees.forEach(e => {
+            const displayName = (lang === 'en') ? (e.nameEn || e.name) : e.name;
+            dropdown.add(new Option(displayName, e.name));
+          });
         } else {
           const res = await fetch(`${API}/departments`);
           const departments = await res.json();
-          departments.forEach(d => dropdown.add(new Option(d.name, d.name)));
+          departments.forEach(d => {
+            const displayName = (lang === 'en') ? (d.nameEn || d.name) : d.name;
+            dropdown.add(new Option(displayName, d.name));
+          });
         }
       } catch (e) { console.error("Error loading targets:", e); }
     }
@@ -986,23 +1007,30 @@
         const list = document.getElementById('employees-list');
         if (!list) return;
         
-        list.innerHTML = employees.map(e => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <span style="font-weight:700">${e.name}</span>
-              <span style="font-size:12px;opacity:0.6">${e.department || 'بدون قسم'}</span>
+        const lang = document.documentElement.getAttribute('data-lang') || 'ar';
+        list.innerHTML = employees.map(e => {
+          const displayName = (lang === 'en') ? (e.nameEn || e.name) : e.name;
+          const displayDept = (lang === 'en') ? (e.departmentEn || e.department || 'No Department') : (e.department || 'بدون قسم');
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-weight:700" data-ar="${e.name}" data-en="${e.nameEn || e.name}">${displayName}</span>
+                <span style="font-size:12px;opacity:0.6" data-ar="${e.department || 'بدون قسم'}" data-en="${e.departmentEn || e.department || 'No Department'}">${displayDept}</span>
+              </div>
+              <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteEmployee(${e.id})">
+                <i class="fa-solid fa-trash-can"></i> حذف
+              </button>
             </div>
-            <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteEmployee(${e.id})">
-              <i class="fa-solid fa-trash-can"></i> حذف
-            </button>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (e) { console.error(e); }
     }
 
     async function addEmployee() {
       const name = document.getElementById('new-employee-name').value.trim();
+      const nameEn = document.getElementById('new-employee-name-en')?.value.trim() || name;
       const department = document.getElementById('new-employee-department').value.trim();
+      const departmentEn = document.getElementById('new-employee-department-en')?.value.trim() || department;
       const msg = document.getElementById('employees-msg');
       
       if (!name) { setMsg(msg, '⚠️ يرجى إدخال اسم الموظف', 'warn'); return; }
@@ -1011,7 +1039,7 @@
         const res = await fetch(`${API}/employees`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, department })
+          body: JSON.stringify({ name, nameEn, department, departmentEn })
         });
         const data = await res.json();
         if (data.success) {
@@ -1044,19 +1072,24 @@
         const list = document.getElementById('departments-list');
         if (!list) return;
         
-        list.innerHTML = departments.map(d => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
-            <span style="font-weight:700">${d.name}</span>
-            <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteDepartment(${d.id})">
-              <i class="fa-solid fa-trash-can"></i> حذف
-            </button>
-          </div>
-        `).join('');
+        const lang = document.documentElement.getAttribute('data-lang') || 'ar';
+        list.innerHTML = departments.map(d => {
+          const displayName = (lang === 'en') ? (d.nameEn || d.name) : d.name;
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+              <span style="font-weight:700" data-ar="${d.name}" data-en="${d.nameEn || d.name}">${displayName}</span>
+              <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteDepartment(${d.id})">
+                <i class="fa-solid fa-trash-can"></i> حذف
+              </button>
+            </div>
+          `;
+        }).join('');
       } catch (e) { console.error(e); }
     }
 
     async function addDepartment() {
       const name = document.getElementById('new-department-name').value.trim();
+      const nameEn = document.getElementById('new-department-name-en')?.value.trim() || name;
       const msg = document.getElementById('departments-msg');
       
       if (!name) { setMsg(msg, '⚠️ يرجى إدخال اسم القسم', 'warn'); return; }
@@ -1065,7 +1098,7 @@
         const res = await fetch(`${API}/departments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, nameEn })
         });
         const data = await res.json();
         if (data.success) {
@@ -1244,11 +1277,36 @@
     function showEvalModal(index) {
       const ev = evaluations[index];
       if (!ev) return;
+      
+      const lang = document.documentElement.getAttribute('data-lang') || 'ar';
+      
       document.getElementById('modalTarget').textContent = ev.targetName || ev.target_name;
-      document.getElementById('modalScore').textContent = ev.avgScore + ' / 5';
-      document.getElementById('modalStatus').textContent = ev.status;
-      document.getElementById('modalSubmittedBy').textContent = ev.submittedBy;
-      document.getElementById('modalComment').textContent = ev.comment;
+      
+      // عرض عدد التقييمات (سيكون 1 لكل تقييم حالياً)
+      document.getElementById('modalRatingCount').textContent = '1';
+      
+      document.getElementById('modalSubmittedBy').textContent = ev.submittedBy || 'مجهول';
+      
+      // عرض التاريخ
+      if (ev.createdAt) {
+        const date = new Date(ev.createdAt);
+        const dateStr = date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US');
+        document.getElementById('modalDate').textContent = dateStr;
+      } else {
+        document.getElementById('modalDate').textContent = '–';
+      }
+      
+      document.getElementById('modalComment').textContent = ev.comment || '–';
+      
+      // عرض الأسئلة والدرجات (محاكاة - يمكن تحسينها لاحقاً بتخزين الدرجات الفردية)
+      const questionsRatingsDiv = document.getElementById('modalQuestionsRatings');
+      questionsRatingsDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(99,102,241,0.1); border-radius: 10px; border: 1px solid rgba(99,102,241,0.2);">
+          <span style="font-weight: 600;">${lang === 'ar' ? 'المتوسط العام' : 'Overall Average'}</span>
+          <span style="background: var(--primary); color: #fff; padding: 6px 14px; border-radius: 8px; font-weight: 700;">${ev.avgScore} / 5</span>
+        </div>
+      `;
+      
       const evalModal = document.getElementById('evalModal');
       if (evalModal) {
         evalModal.classList.add('show');

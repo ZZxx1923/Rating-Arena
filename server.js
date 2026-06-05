@@ -119,19 +119,39 @@ function createTables() {
     db.query(`
         CREATE TABLE IF NOT EXISTS employees (
             id          INT AUTO_INCREMENT PRIMARY KEY,
-            name        VARCHAR(255) NOT NULL UNIQUE,
+            name        VARCHAR(255) NOT NULL,
+            nameEn      VARCHAR(255),
             department  VARCHAR(255),
+            departmentEn VARCHAR(255),
             createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-    `);
+    `, (err) => {
+        if (err) console.error("Error creating employees table:", err);
+        
+        db.query("SHOW COLUMNS FROM employees LIKE 'nameEn'", (err, result) => {
+            if (!err && result.length === 0) {
+                db.query("ALTER TABLE employees ADD COLUMN nameEn VARCHAR(255)");
+                db.query("ALTER TABLE employees ADD COLUMN departmentEn VARCHAR(255)");
+            }
+        });
+    });
 
     db.query(`
         CREATE TABLE IF NOT EXISTS departments (
             id          INT AUTO_INCREMENT PRIMARY KEY,
-            name        VARCHAR(255) NOT NULL UNIQUE,
+            name        VARCHAR(255) NOT NULL,
+            nameEn      VARCHAR(255),
             createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-    `);
+    `, (err) => {
+        if (err) console.error("Error creating departments table:", err);
+        
+        db.query("SHOW COLUMNS FROM departments LIKE 'nameEn'", (err, result) => {
+            if (!err && result.length === 0) {
+                db.query("ALTER TABLE departments ADD COLUMN nameEn VARCHAR(255)");
+            }
+        });
+    });
 }
 
 /* ════════════════════════════════
@@ -231,15 +251,17 @@ app.get("/employees", (req, res) => {
 });
 
 app.post("/employees", (req, res) => {
-    const { name, department } = req.body;
+    const { name, nameEn, department, departmentEn } = req.body;
     if (!name) return res.json({ success: false, message: "اسم الموظف مطلوب" });
-    db.query("INSERT INTO employees (name, department) VALUES (?, ?)", [name, department || null], (err, result) => {
-        if (err) {
-            console.error("Add Employee Error:", err);
-            return res.status(500).json({ success: false, message: "فشل إضافة الموظف" });
-        }
-        res.json({ success: true, id: result.insertId });
-    });
+    db.query("INSERT INTO employees (name, nameEn, department, departmentEn) VALUES (?, ?, ?, ?)", 
+        [name, nameEn || name, department || null, departmentEn || department || null], 
+        (err, result) => {
+            if (err) {
+                console.error("Add Employee Error:", err);
+                return res.status(500).json({ success: false, message: "فشل إضافة الموظف" });
+            }
+            res.json({ success: true, id: result.insertId });
+        });
 });
 
 app.delete("/employees/:id", (req, res) => {
@@ -263,9 +285,9 @@ app.get("/departments", (req, res) => {
 });
 
 app.post("/departments", (req, res) => {
-    const { name } = req.body;
+    const { name, nameEn } = req.body;
     if (!name) return res.json({ success: false, message: "اسم القسم مطلوب" });
-    db.query("INSERT INTO departments (name) VALUES (?)", [name], (err, result) => {
+    db.query("INSERT INTO departments (name, nameEn) VALUES (?, ?)", [name, nameEn || name], (err, result) => {
         if (err) {
             console.error("Add Department Error:", err);
             return res.status(500).json({ success: false, message: "فشل إضافة القسم" });
