@@ -59,7 +59,7 @@ function createTables() {
     db.query(`
         CREATE TABLE IF NOT EXISTS evaluations (
             id          INT AUTO_INCREMENT PRIMARY KEY,
-            targetName  VARCHAR(200) NOT NULL,
+            target_name  VARCHAR(200) NOT NULL,
             avgScore    DECIMAL(4,2) DEFAULT 0,
             comment     TEXT,
             status      VARCHAR(50) DEFAULT 'Pending',
