@@ -286,7 +286,7 @@ app.delete("/departments/:id", (req, res) => {
 ════════════════════════════════ */
 app.get("/evaluations", (req, res) => {
     db.query(
-        "SELECT * FROM evaluations ORDER BY createdAt DESC",
+        "SELECT * FROM evaluations ORDER BY id DESC",
         (err, result) => {
             if (err) {
                 console.error("Get Evaluations Error:", err);
