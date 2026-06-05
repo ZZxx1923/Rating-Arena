@@ -59,8 +59,9 @@ function createTables() {
     db.query(`
         CREATE TABLE IF NOT EXISTS evaluations (
             id          INT AUTO_INCREMENT PRIMARY KEY,
-            target_name  VARCHAR(200) NOT NULL,
+            targetName  VARCHAR(200) NOT NULL,
             avgScore    DECIMAL(4,2) DEFAULT 0,
+            details     JSON,
             comment     TEXT,
             status      VARCHAR(50) DEFAULT 'Pending',
             rejectionReason TEXT,
@@ -79,6 +80,11 @@ function createTables() {
         db.query("SHOW COLUMNS FROM evaluations LIKE 'isAnonymous'", (err, result) => {
             if (!err && result.length === 0) {
                 db.query("ALTER TABLE evaluations ADD COLUMN isAnonymous TINYINT(1) DEFAULT 0");
+            }
+        });
+        db.query("SHOW COLUMNS FROM evaluations LIKE 'details'", (err, result) => {
+            if (!err && result.length === 0) {
+                db.query("ALTER TABLE evaluations ADD COLUMN details JSON");
             }
         });
     });
@@ -325,11 +331,11 @@ app.get("/evaluations", (req, res) => {
 });
 
 app.post("/evaluations", (req, res) => {
-    const { targetName, avgScore, comment, status, submittedBy, isAnonymous } = req.body;
+    const { targetName, avgScore, details, comment, status, submittedBy, isAnonymous } = req.body;
     if (!targetName) return res.json({ success: false, message: "بيانات ناقصة" });
 
-    const sql = "INSERT INTO evaluations (targetName, avgScore, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?)";
-    const values = [targetName, avgScore || 0, comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0];
+    const sql = "INSERT INTO evaluations (targetName, avgScore, details, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?,?)";
+    const values = [targetName, avgScore || 0, JSON.stringify(details || []), comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0];
     
     db.query(sql, values, (err, result) => {
         if (err) {
