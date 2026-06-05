@@ -671,10 +671,14 @@
       try {
         const res = await fetch(`${API}/questions`);
         let questions = await res.json();
-        if (!questions || questions.length === 0) {
+        
+        // إذا لم توجد أسئلة، نقوم بتحديث الواجهة وإظهار رسالة
+        if (!Array.isArray(questions) || questions.length === 0) {
+           console.log("No questions found, using defaults...");
            questions = [
-             { id: 1, questionText: 'جودة العمل المقدم؟', questionTextEn: 'Quality of work delivered?' },
-             { id: 2, questionText: 'الالتزام بالمواعيد؟', questionTextEn: 'Punctuality and commitment?' }
+             { id: 'd1', questionText: 'جودة العمل المقدم؟', questionTextEn: 'Quality of work delivered?' },
+             { id: 'd2', questionText: 'القيادة والمبادرة؟', questionTextEn: 'Leadership and initiative?' },
+             { id: 'd3', questionText: 'الالتزام بالوقت والمواعيد؟', questionTextEn: 'Punctuality and deadlines?' }
            ];
         }
         const container = document.getElementById('dynamic-questions-container');
