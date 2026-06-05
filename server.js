@@ -33,13 +33,19 @@ function createTables() {
             id       INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(100) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            canViewResults TINYINT(1) DEFAULT 1
+            canViewResults TINYINT(1) DEFAULT 1,
+            role VARCHAR(50) DEFAULT 'user'
         )
     `, () => {
         // Migration: ensure canViewResults column exists if table was created earlier
         db.query("SHOW COLUMNS FROM users LIKE 'canViewResults'", (err, result) => {
             if (!err && result.length === 0) {
                 db.query("ALTER TABLE users ADD COLUMN canViewResults TINYINT(1) DEFAULT 1");
+            }
+        });
+        db.query("SHOW COLUMNS FROM users LIKE 'role'", (err, result) => {
+            if (!err && result.length === 0) {
+                db.query("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'");
             }
         });
         // Ensure 'omar' exists
@@ -100,6 +106,23 @@ function createTables() {
             }
         });
     });
+
+    db.query(`
+        CREATE TABLE IF NOT EXISTS employees (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            name        VARCHAR(255) NOT NULL UNIQUE,
+            department  VARCHAR(255),
+            createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    db.query(`
+        CREATE TABLE IF NOT EXISTS departments (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            name        VARCHAR(255) NOT NULL UNIQUE,
+            createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
 }
 
 /* ════════════════════════════════
@@ -119,7 +142,7 @@ app.post("/login", (req, res) => {
                     message: "تم تسجيل الدخول",
                     user: {
                         username: user.username,
-                        role: user.username === 'omar' ? 'admin' : 'user',
+                        role: user.role,
                         canViewResults: user.canViewResults
                     }
                 });
@@ -134,17 +157,17 @@ app.post("/login", (req, res) => {
    USERS
 ════════════════════════════════ */
 app.get("/users", (req, res) => {
-    db.query("SELECT id, username, canViewResults FROM users ORDER BY id", (err, result) => {
+    db.query("SELECT id, username, canViewResults, role FROM users ORDER BY id", (err, result) => {
         if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
         res.json(result);
     });
 });
 
-app.patch("/users/:id/permission", (req, res) => {
-    const { canViewResults } = req.body;
+app.patch("/users/:id/role", (req, res) => {
+    const { role } = req.body;
     db.query(
-        "UPDATE users SET canViewResults=? WHERE id=?",
-        [canViewResults ? 1 : 0, req.params.id],
+        "UPDATE users SET role=? WHERE id=?",
+        [role, req.params.id],
         (err) => {
             if (err) return res.status(500).json({ message: "فشل التحديث" });
             res.json({ success: true });
@@ -177,50 +200,83 @@ app.delete("/users/:id", (req, res) => {
 });
 
 /* ════════════════════════════════
-   EVALUATIONS
+   EMPLOYEES
 ════════════════════════════════ */
-app.get("/evaluations", (req, res) => {
-    db.query("SELECT * FROM evaluations ORDER BY created_at DESC", (err, results) => {
-        if (err) {
-            console.error("Fetch Eval Error:", err);
-            return res.status(500).json({ error: err.message });
-        }
-        // التأكد من تحويل scores من نص إلى JSON إذا لزم الأمر
-        const processed = results.map(row => {
-            if (typeof row.scores === 'string') {
-                try { row.scores = JSON.parse(row.scores); } catch(e) { row.scores = {}; }
-            }
-            return row;
-        });
-        res.json(processed);
+app.get("/employees", (req, res) => {
+    db.query("SELECT * FROM employees ORDER BY name", (err, result) => {
+        if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
+        res.json(result);
     });
 });
 
-
-app.post("/evaluations", (req, res) => {
-    const { target_type, target_name, evaluator_name, scores, comment, status } = req.body;
-    
-    // تحويل التقييمات إلى نص لحفظها في قاعدة البيانات
-    const scoresStr = JSON.stringify(scores || {});
-    
-    const sql = "INSERT INTO evaluations (target_type, target_name, evaluator_name, scores, comment, status) VALUES (?, ?, ?, ?, ?, ?)";
-    
-    db.query(sql, [
-        target_type || 'employee', 
-        target_name, 
-        evaluator_name || 'Anonymous', 
-        scoresStr, 
-        comment || '', 
-        status || 'pending'
-    ], (err, result) => {
-        if (err) {
-            console.error("Insert Eval Error:", err);
-            return res.status(500).json({ error: err.message });
-        }
+app.post("/employees", (req, res) => {
+    const { name, department } = req.body;
+    if (!name) return res.json({ success: false, message: "اسم الموظف مطلوب" });
+    db.query("INSERT INTO employees (name, department) VALUES (?, ?)", [name, department || null], (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: "فشل إضافة الموظف" });
         res.json({ success: true, id: result.insertId });
     });
 });
 
+app.delete("/employees/:id", (req, res) => {
+    db.query("DELETE FROM employees WHERE id=?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ message: "فشل حذف الموظف" });
+        res.json({ success: true });
+    });
+});
+
+/* ════════════════════════════════
+   DEPARTMENTS
+════════════════════════════════ */
+app.get("/departments", (req, res) => {
+    db.query("SELECT * FROM departments ORDER BY name", (err, result) => {
+        if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
+        res.json(result);
+    });
+});
+
+app.post("/departments", (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.json({ success: false, message: "اسم القسم مطلوب" });
+    db.query("INSERT INTO departments (name) VALUES (?)", [name], (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: "فشل إضافة القسم" });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.delete("/departments/:id", (req, res) => {
+    db.query("DELETE FROM departments WHERE id=?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ message: "فشل حذف القسم" });
+        res.json({ success: true });
+    });
+});
+
+/* ════════════════════════════════
+   EVALUATIONS
+════════════════════════════════ */
+app.get("/evaluations", (req, res) => {
+    db.query(
+        "SELECT * FROM evaluations ORDER BY createdAt DESC",
+        (err, result) => {
+            if (err) return res.status(500).json({ message: "خطأ" });
+            res.json(result);
+        }
+    );
+});
+
+app.post("/evaluations", (req, res) => {
+    const { targetName, avgScore, comment, status, submittedBy, isAnonymous } = req.body;
+    if (!targetName) return res.json({ success: false, message: "بيانات ناقصة" });
+
+    db.query(
+        "INSERT INTO evaluations (targetName, avgScore, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?)",
+        [targetName, avgScore || 0, comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0],
+        (err, result) => {
+            if (err) return res.status(500).json({ success: false, message: "فشل الحفظ" });
+            res.json({ success: true, id: result.insertId });
+        }
+    );
+});
 
 app.patch("/evaluations/:id", (req, res) => {
     const { status, rejectionReason } = req.body;
