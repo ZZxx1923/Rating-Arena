@@ -19,9 +19,9 @@ const db = mysql.createConnection({
 });
 
 db.connect((err) => {
-    if (err) console.log("DB Error:", err);
+    if (err) console.error("❌ DB Connection Error:", err);
     else {
-        console.log("✅ تم الاتصال بقاعدة البيانات");
+        console.log("✅ تم الاتصال بقاعدة البيانات بنجاح");
         createTables();
     }
 });
@@ -36,8 +36,9 @@ function createTables() {
             canViewResults TINYINT(1) DEFAULT 1,
             role VARCHAR(50) DEFAULT 'user'
         )
-    `, () => {
-        // Migration: ensure canViewResults column exists if table was created earlier
+    `, (err) => {
+        if (err) console.error("Error creating users table:", err);
+        
         db.query("SHOW COLUMNS FROM users LIKE 'canViewResults'", (err, result) => {
             if (!err && result.length === 0) {
                 db.query("ALTER TABLE users ADD COLUMN canViewResults TINYINT(1) DEFAULT 1");
@@ -48,10 +49,9 @@ function createTables() {
                 db.query("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'");
             }
         });
-        // Ensure 'omar' exists
         db.query("SELECT id FROM users WHERE username = 'omar'", (err, result) => {
             if (result && result.length === 0) {
-                db.query("INSERT INTO users (username, password) VALUES ('omar', '123456')");
+                db.query("INSERT INTO users (username, password, role) VALUES ('omar', '123456', 'admin')");
             }
         });
     });
@@ -68,7 +68,9 @@ function createTables() {
             isAnonymous TINYINT(1) DEFAULT 0,
             createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-    `, () => {
+    `, (err) => {
+        if (err) console.error("Error creating evaluations table:", err);
+        
         db.query("SHOW COLUMNS FROM evaluations LIKE 'rejectionReason'", (err, result) => {
             if (!err && result.length === 0) {
                 db.query("ALTER TABLE evaluations ADD COLUMN rejectionReason TEXT");
@@ -89,8 +91,9 @@ function createTables() {
             questionType VARCHAR(50) DEFAULT 'rating',
             createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-    `, () => {
-        // Migration: ensure questionTextEn exists
+    `, (err) => {
+        if (err) console.error("Error creating questions table:", err);
+        
         db.query("SHOW COLUMNS FROM questions LIKE 'questionTextEn'", (err, result) => {
             if (!err && result.length === 0) {
                 db.query("ALTER TABLE questions ADD COLUMN questionTextEn VARCHAR(500)");
@@ -134,7 +137,10 @@ app.post("/login", (req, res) => {
         "SELECT * FROM users WHERE username=? AND password=?",
         [username, password],
         (err, result) => {
-            if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
+            if (err) {
+                console.error("Login Error:", err);
+                return res.status(500).json({ message: "خطأ في السيرفر" });
+            }
             if (result.length > 0) {
                 const user = result[0];
                 res.json({ 
@@ -158,7 +164,10 @@ app.post("/login", (req, res) => {
 ════════════════════════════════ */
 app.get("/users", (req, res) => {
     db.query("SELECT id, username, canViewResults, role FROM users ORDER BY id", (err, result) => {
-        if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
+        if (err) {
+            console.error("Get Users Error:", err);
+            return res.status(500).json({ message: "خطأ في السيرفر" });
+        }
         res.json(result);
     });
 });
@@ -169,7 +178,10 @@ app.patch("/users/:id/role", (req, res) => {
         "UPDATE users SET role=? WHERE id=?",
         [role, req.params.id],
         (err) => {
-            if (err) return res.status(500).json({ message: "فشل التحديث" });
+            if (err) {
+                console.error("Update Role Error:", err);
+                return res.status(500).json({ message: "فشل التحديث" });
+            }
             res.json({ success: true });
         }
     );
@@ -204,8 +216,11 @@ app.delete("/users/:id", (req, res) => {
 ════════════════════════════════ */
 app.get("/employees", (req, res) => {
     db.query("SELECT * FROM employees ORDER BY name", (err, result) => {
-        if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
-        res.json(result);
+        if (err) {
+            console.error("Get Employees Error:", err);
+            return res.status(500).json({ message: "خطأ في السيرفر" });
+        }
+        res.json(result || []);
     });
 });
 
@@ -213,7 +228,10 @@ app.post("/employees", (req, res) => {
     const { name, department } = req.body;
     if (!name) return res.json({ success: false, message: "اسم الموظف مطلوب" });
     db.query("INSERT INTO employees (name, department) VALUES (?, ?)", [name, department || null], (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: "فشل إضافة الموظف" });
+        if (err) {
+            console.error("Add Employee Error:", err);
+            return res.status(500).json({ success: false, message: "فشل إضافة الموظف" });
+        }
         res.json({ success: true, id: result.insertId });
     });
 });
@@ -230,8 +248,11 @@ app.delete("/employees/:id", (req, res) => {
 ════════════════════════════════ */
 app.get("/departments", (req, res) => {
     db.query("SELECT * FROM departments ORDER BY name", (err, result) => {
-        if (err) return res.status(500).json({ message: "خطأ في السيرفر" });
-        res.json(result);
+        if (err) {
+            console.error("Get Departments Error:", err);
+            return res.status(500).json({ message: "خطأ في السيرفر" });
+        }
+        res.json(result || []);
     });
 });
 
@@ -239,7 +260,10 @@ app.post("/departments", (req, res) => {
     const { name } = req.body;
     if (!name) return res.json({ success: false, message: "اسم القسم مطلوب" });
     db.query("INSERT INTO departments (name) VALUES (?)", [name], (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: "فشل إضافة القسم" });
+        if (err) {
+            console.error("Add Department Error:", err);
+            return res.status(500).json({ success: false, message: "فشل إضافة القسم" });
+        }
         res.json({ success: true, id: result.insertId });
     });
 });
@@ -258,8 +282,16 @@ app.get("/evaluations", (req, res) => {
     db.query(
         "SELECT * FROM evaluations ORDER BY createdAt DESC",
         (err, result) => {
-            if (err) return res.status(500).json({ message: "خطأ" });
-            res.json(result);
+            if (err) {
+                console.error("Get Evaluations Error:", err);
+                // محاولة استعلام بديل في حال كان اسم العمود مختلفاً (createdAt vs created_at)
+                db.query("SELECT * FROM evaluations ORDER BY id DESC", (err2, result2) => {
+                    if (err2) return res.status(500).json({ message: "خطأ في قاعدة البيانات", error: err.message });
+                    res.json(result2 || []);
+                });
+                return;
+            }
+            res.json(result || []);
         }
     );
 });
@@ -268,14 +300,22 @@ app.post("/evaluations", (req, res) => {
     const { targetName, avgScore, comment, status, submittedBy, isAnonymous } = req.body;
     if (!targetName) return res.json({ success: false, message: "بيانات ناقصة" });
 
-    db.query(
-        "INSERT INTO evaluations (targetName, avgScore, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?)",
-        [targetName, avgScore || 0, comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0],
-        (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: "فشل الحفظ" });
-            res.json({ success: true, id: result.insertId });
+    const sql = "INSERT INTO evaluations (targetName, avgScore, comment, status, submittedBy, isAnonymous) VALUES (?,?,?,?,?,?)";
+    const values = [targetName, avgScore || 0, comment || '', status || 'Pending', submittedBy || '', isAnonymous ? 1 : 0];
+    
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Post Evaluation Error:", err);
+            // محاولة إدراج بدون الأعمدة الجديدة في حال فشل الإدراج
+            db.query("INSERT INTO evaluations (targetName, avgScore, comment, status) VALUES (?,?,?,?)", 
+            [targetName, avgScore || 0, comment || '', status || 'Pending'], (err2, result2) => {
+                if (err2) return res.status(500).json({ success: false, message: "فشل الحفظ النهائي", error: err.message });
+                res.json({ success: true, id: result2.insertId });
+            });
+            return;
         }
-    );
+        res.json({ success: true, id: result.insertId });
+    });
 });
 
 app.patch("/evaluations/:id", (req, res) => {
@@ -284,7 +324,10 @@ app.patch("/evaluations/:id", (req, res) => {
         "UPDATE evaluations SET status=?, rejectionReason=? WHERE id=?",
         [status, rejectionReason || null, req.params.id],
         (err) => {
-            if (err) return res.status(500).json({ message: "فشل التحديث" });
+            if (err) {
+                console.error("Update Evaluation Error:", err);
+                return res.status(500).json({ message: "فشل التحديث" });
+            }
             res.json({ success: true });
         }
     );
@@ -302,8 +345,11 @@ app.delete("/evaluations/:id", (req, res) => {
 ════════════════════════════════ */
 app.get("/questions", (req, res) => {
     db.query("SELECT * FROM questions ORDER BY id", (err, result) => {
-        if (err) return res.status(500).json({ message: "خطأ" });
-        res.json(result);
+        if (err) {
+            console.error("Get Questions Error:", err);
+            return res.status(500).json({ message: "خطأ" });
+        }
+        res.json(result || []);
     });
 });
 
@@ -315,7 +361,10 @@ app.post("/questions", (req, res) => {
         "INSERT INTO questions (questionText, questionTextEn, questionType) VALUES (?,?,?)",
         [questionText, questionTextEn || questionText, questionType || 'rating'],
         (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: "فشل الإضافة" });
+            if (err) {
+                console.error("Post Question Error:", err);
+                return res.status(500).json({ success: false, message: "فشل الإضافة" });
+            }
             res.json({ success: true, id: result.insertId });
         }
     );
