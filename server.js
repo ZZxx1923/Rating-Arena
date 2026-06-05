@@ -100,12 +100,18 @@ function createTables() {
             }
         });
         
-        db.query("SELECT COUNT(*) as count FROM questions", (err, result) => {
-            if (result && result[0].count === 0) {
-                db.query("INSERT INTO questions (questionText, questionTextEn, questionType) VALUES (?, ?, ?)", 
-                    ['جودة العمل المقدم؟', 'Quality of work delivered?', 'rating']);
-                db.query("INSERT INTO questions (questionText, questionTextEn, questionType) VALUES (?, ?, ?)", 
-                    ['القيادة والمبادرة؟', 'Leadership and initiative?', 'rating']);
+        db.query("SELECT id FROM questions LIMIT 1", (err, result) => {
+            if (err || (result && result.length === 0)) {
+                console.log("إضافة الأسئلة الافتراضية...");
+                const defaultQuestions = [
+                    ['جودة العمل المقدم؟', 'Quality of work delivered?', 'rating'],
+                    ['القيادة والمبادرة؟', 'Leadership and initiative?', 'rating'],
+                    ['الالتزام بالوقت والمواعيد؟', 'Punctuality and deadlines?', 'rating'],
+                    ['التعاون مع الفريق؟', 'Teamwork and collaboration?', 'rating']
+                ];
+                defaultQuestions.forEach(q => {
+                    db.query("INSERT INTO questions (questionText, questionTextEn, questionType) VALUES (?, ?, ?)", q);
+                });
             }
         });
     });
