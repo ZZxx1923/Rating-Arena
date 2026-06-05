@@ -188,7 +188,37 @@
       <!-- Settings -->
       <section class="content-section" id="section-settings">
 
+        <!-- Organization Management (Admin Only) -->
+        <div class="card settings-card-fimro role-admin-only" style="margin-bottom:24px">
+          <h2 style="margin-bottom:18px; display:flex; align-items:center; gap:10px;" data-en="Organization Management" data-ar="إدارة المنظمة"><i class="fa-solid fa-building-user" style="color:var(--primary)"></i> إدارة المنظمة</h2>
+          
+          <!-- Employees Management -->
+          <div style="margin-bottom:24px;">
+            <h3 style="margin-bottom:12px; font-size:16px;" data-en="Employees" data-ar="الموظفون">الموظفون</h3>
+            <div style="display:flex;gap:12px;margin-bottom:12px;">
+              <input type="text" class="fimro-input" id="new-employee-name" placeholder="اسم الموظف" style="flex:1;" />
+              <input type="text" class="fimro-input" id="new-employee-department" placeholder="القسم (اختياري)" style="flex:1;" />
+              <button class="btn btn-fimro-primary" onclick="addEmployee()" style="padding:0 20px;"><i class="fa-solid fa-user-plus"></i> إضافة</button>
+            </div>
+            <div id="employees-msg" style="font-size:13px;margin-bottom:12px"></div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;max-height:200px;overflow-y:auto">
+              <div id="employees-list" style="display:flex;flex-direction:column;gap:12px"></div>
+            </div>
+          </div>
 
+          <!-- Departments Management -->
+          <div>
+            <h3 style="margin-bottom:12px; font-size:16px;" data-en="Departments" data-ar="الأقسام">الأقسام</h3>
+            <div style="display:flex;gap:12px;margin-bottom:12px;">
+              <input type="text" class="fimro-input" id="new-department-name" placeholder="اسم القسم" style="flex:1;" />
+              <button class="btn btn-fimro-primary" onclick="addDepartment()" style="padding:0 20px;"><i class="fa-solid fa-building-circle-plus"></i> إضافة</button>
+            </div>
+            <div id="departments-msg" style="font-size:13px;margin-bottom:12px"></div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;max-height:200px;overflow-y:auto">
+              <div id="departments-list" style="display:flex;flex-direction:column;gap:12px"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- Questions Management (Admin Only) -->
         <div class="card settings-card-fimro role-admin-only" style="margin-bottom:24px">
@@ -401,8 +431,7 @@
     ════════════════════════════════════ */
     // استخدم هذا الرابط للتطوير المحلي
     // عند الرفع على Render، غير الرابط إلى: https://your-render-app-name.onrender.com
-    // استخدم رابط Render الخاص بك للإنتاج
-const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://arena-server-c8xo.onrender.com';
+    const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'http://localhost:3000';
     // للإنتاج (Production)، استخدم:
     // const API = 'https://your-render-app-name.onrender.com';
     let evaluations    = [];
@@ -540,19 +569,25 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
         d.classList.toggle('active', i < step);
       });
     }
-    function updateEvalTargetUI() {
-      const radio    = document.querySelector('input[name="eval-target"]:checked');
+    async function updateEvalTargetUI() {
+      const radio    = document.querySelector("input[name=\"eval-target\"]:checked");
       if (!radio) return;
       const target   = radio.value;
-      const dropdown = document.getElementById('target-dropdown');
-      const lang     = document.documentElement.getAttribute('data-lang');
-      dropdown.innerHTML = `<option value="">${lang === 'ar' ? 'اختر...' : 'Choose...'}</option>`;
-      if (target === 'employee')
-        ['Aisha Williams','Marcus Kim','Ravi Patel','Sofia Larsen','Tom Chen']
-          .forEach(e => dropdown.add(new Option(e, e)));
-      else
-        ['Engineering','Design','Marketing','Finance','HR']
-          .forEach(d => dropdown.add(new Option(d, d)));
+      const dropdown = document.getElementById("target-dropdown");
+      const lang     = document.documentElement.getAttribute("data-lang");
+      dropdown.innerHTML = `<option value="">${lang === "ar" ? "اختر..." : "Choose..."}</option>`;
+      
+      try {
+        if (target === "employee") {
+          const res = await fetch(`${API}/employees`);
+          const employees = await res.json();
+          employees.forEach(e => dropdown.add(new Option(e.name, e.name)));
+        } else {
+          const res = await fetch(`${API}/departments`);
+          const departments = await res.json();
+          departments.forEach(d => dropdown.add(new Option(d.name, d.name)));
+        }
+      } catch (e) { console.error("Error loading targets:", e); }
     }
 
     /* ── Evaluations ── */
@@ -733,7 +768,7 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
         return `
           <tr>
             <td>${dateStr}</td>
-            <td>${ev.targetName}</td>
+            <td>${ev.targetName || ev.target_name}</td>
             <td>${ev.avgScore} / 5</td>
             <td class="td-comment">${ev.comment}</td>
             <td><span class="status-pill ${ev.status}">${ev.status}</span></td>
@@ -765,7 +800,7 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
         return `
         <div class="fimro-card-eval ${ratingClass} ${ev.status === 'Rejected' ? 'rejected-card' : ''}" onclick="showEvalModal(${evIdx})" style="cursor:pointer;">
           <div class="eval-header" style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-            <h3 style="font-size:18px; font-weight:700;">${ev.targetName}</h3>
+            <h3 style="font-size:18px; font-weight:700;">${ev.targetName || ev.target_name}</h3>
             <span style="background:rgba(99,102,241,0.1); color:var(--primary); padding:4px 10px; border-radius:8px; font-weight:800; font-size:14px;">${ev.avgScore} / 5</span>
           </div>
           <p style="font-size:14px; color:rgba(255,255,255,0.8); line-height:1.6; margin-bottom:12px;">"${ev.comment}"</p>
@@ -844,7 +879,7 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
 
     /* ── Users ── */
     async function loadUsers() {
-      const tbody = document.getElementById('users-table-body');
+      const tbody = document.getElementById("users-table-body");
       try {
         const res   = await fetch(`${API}/users`);
         const users = await res.json();
@@ -860,14 +895,14 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
             <td><strong>${u.username}</strong></td>
             <td>
               ${isOmar ? '<span style="color:#10b981;font-weight:700">مشرف</span>' : `
-                <button onclick="togglePermission(${u.id}, ${u.canViewResults})"
-                  style="background:${u.canViewResults ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.05)'};
-                         border:1px solid ${u.canViewResults ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.1)'};
-                         color:${u.canViewResults ? '#10b981' : '#aaa'};
+                <button onclick="toggleUserRole(${u.id}, '${u.role}')"
+                  style="background:${u.role === 'admin' ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.05)'};
+                         border:1px solid ${u.role === 'admin' ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.1)'};
+                         color:${u.role === 'admin' ? '#10b981' : '#aaa'};
                          padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;
                          display:inline-flex;align-items:center;gap:6px">
-                  <i class="fa-solid ${u.canViewResults ? 'fa-eye' : 'fa-eye-slash'}"></i> 
-                  ${u.canViewResults ? 'مشاهدة مفعلة' : 'مشاهدة محجوبة'}
+                  <i class="fa-solid ${u.role === 'admin' ? 'fa-user-tie' : 'fa-user'}"></i> 
+                  ${u.role === 'admin' ? 'مشرف' : 'مستخدم'}
                 </button>
               `}
             </td>
@@ -887,19 +922,22 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
       }
     }
 
-    async function togglePermission(userId, currentStatus) {
+    async function toggleUserRole(userId, currentRole) {
+      const newRole = currentRole === 'admin' ? 'user' : 'admin';
       try {
-        const res = await fetch(`${API}/users/${userId}/permission`, {
+        const res = await fetch(`${API}/users/${userId}/role`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ canViewResults: !currentStatus })
+          body: JSON.stringify({ role: newRole })
         });
         const data = await res.json();
         if (data.success) {
           loadUsers();
-          showToast('تم تحديث الصلاحية ✅', 'ok');
+          showToast('تم تحديث رتبة المستخدم ✅', 'ok');
+        } else {
+          showToast('❌ فشل تحديث الرتبة', 'err');
         }
-      } catch (e) { showToast('❌ فشل التحديث', 'err'); }
+      } catch (e) { showToast('❌ تعذّر الاتصال بالسيرفر', 'err'); }
     }
 
     async function addUser() {
@@ -933,6 +971,118 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
           if (row) { row.style.opacity='0'; row.style.transition='opacity .3s'; setTimeout(() => loadUsers(), 350); }
         }
       } catch (e) { alert('تعذّر الحذف'); }
+    }
+
+    /* ── Organization Management ── */
+    async function loadEmployees() {
+      try {
+        const res = await fetch(`${API}/employees`);
+        const employees = await res.json();
+        const list = document.getElementById('employees-list');
+        if (!list) return;
+        
+        list.innerHTML = employees.map(e => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-weight:700">${e.name}</span>
+              <span style="font-size:12px;opacity:0.6">${e.department || 'بدون قسم'}</span>
+            </div>
+            <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteEmployee(${e.id})">
+              <i class="fa-solid fa-trash-can"></i> حذف
+            </button>
+          </div>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    async function addEmployee() {
+      const name = document.getElementById('new-employee-name').value.trim();
+      const department = document.getElementById('new-employee-department').value.trim();
+      const msg = document.getElementById('employees-msg');
+      
+      if (!name) { setMsg(msg, '⚠️ يرجى إدخال اسم الموظف', 'warn'); return; }
+      
+      try {
+        const res = await fetch(`${API}/employees`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, department })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMsg(msg, '✅ تم إضافة الموظف بنجاح', 'ok');
+          document.getElementById('new-employee-name').value = '';
+          document.getElementById('new-employee-department').value = '';
+          loadEmployees();
+          updateEvalTargetUI(); // تحديث القائمة المنسدلة
+        } else { setMsg(msg, '❌ فشلت الإضافة', 'err'); }
+      } catch (e) { setMsg(msg, '❌ خطأ في الاتصال', 'err'); }
+    }
+
+    async function deleteEmployee(id) {
+      if (!confirm('هل تريد حذف هذا الموظف؟')) return;
+      try {
+        const res = await fetch(`${API}/employees/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          loadEmployees();
+          updateEvalTargetUI(); // تحديث القائمة المنسدلة
+          showToast('تم حذف الموظف ✅', 'ok');
+        }
+      } catch (e) { showToast('❌ فشل الحذف', 'err'); }
+    }
+
+    async function loadDepartments() {
+      try {
+        const res = await fetch(`${API}/departments`);
+        const departments = await res.json();
+        const list = document.getElementById('departments-list');
+        if (!list) return;
+        
+        list.innerHTML = departments.map(d => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+            <span style="font-weight:700">${d.name}</span>
+            <button class="btn-reject" style="padding:4px 12px;font-size:12px;" onclick="deleteDepartment(${d.id})">
+              <i class="fa-solid fa-trash-can"></i> حذف
+            </button>
+          </div>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    async function addDepartment() {
+      const name = document.getElementById('new-department-name').value.trim();
+      const msg = document.getElementById('departments-msg');
+      
+      if (!name) { setMsg(msg, '⚠️ يرجى إدخال اسم القسم', 'warn'); return; }
+      
+      try {
+        const res = await fetch(`${API}/departments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMsg(msg, '✅ تم إضافة القسم بنجاح', 'ok');
+          document.getElementById('new-department-name').value = '';
+          loadDepartments();
+          updateEvalTargetUI(); // تحديث القائمة المنسدلة
+        } else { setMsg(msg, '❌ فشلت الإضافة', 'err'); }
+      } catch (e) { setMsg(msg, '❌ خطأ في الاتصال', 'err'); }
+    }
+
+    async function deleteDepartment(id) {
+      if (!confirm('هل تريد حذف هذا القسم؟')) return;
+      try {
+        const res = await fetch(`${API}/departments/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          loadDepartments();
+          updateEvalTargetUI(); // تحديث القائمة المنسدلة
+          showToast('تم حذف القسم ✅', 'ok');
+        }
+      } catch (e) { showToast('❌ فشل الحذف', 'err'); }
     }
 
     /* ── Questions ── */
@@ -1089,7 +1239,7 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
     function showEvalModal(index) {
       const ev = evaluations[index];
       if (!ev) return;
-      document.getElementById('modalTarget').textContent = ev.targetName;
+      document.getElementById('modalTarget').textContent = ev.targetName || ev.target_name;
       document.getElementById('modalScore').textContent = ev.avgScore + ' / 5';
       document.getElementById('modalStatus').textContent = ev.status;
       document.getElementById('modalSubmittedBy').textContent = ev.submittedBy;
@@ -1124,6 +1274,8 @@ const API = window.location.hostname === 'localhost' ? 'http://localhost:3000' :
       loadEvaluations();
       refreshDbStats();
       loadFormQuestions();
+      loadEmployees();
+      loadDepartments();
     });
   </script>
 </body>

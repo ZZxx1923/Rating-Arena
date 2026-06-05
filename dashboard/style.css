@@ -886,7 +886,8 @@ body::before {
   top: 35%;
   width: 35px;
   left: 50%;
-  transition: transform 200ms;
+  transition: transform 100ms ease-out;
+  will-change: transform;
 }
 
 .eye {
@@ -935,7 +936,8 @@ body::before {
   left: 50%;
   width: 14px;
   height: 20px;
-  transition: transform 200ms;
+  transition: transform 100ms ease-out;
+  will-change: transform;
 }
 
 #nose {
