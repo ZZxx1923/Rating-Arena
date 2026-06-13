@@ -11,9 +11,6 @@
 </head>
 <body class="role-admin" id="body-root">
 
-  <!-- ═══════════════════════════════════════════
-       PREMIUM HEADER
-  ═══════════════════════════════════════════ -->
   <header class="fimro-header">
     <div class="header-container">
       <div class="header-left">
@@ -37,381 +34,163 @@
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════
-       MAIN APP SHELL
-  ═══════════════════════════════════════════ -->
-  <div class="page app-shell hidden" id="app-shell">
+  <div class="page app-shell" id="app-shell">
     
-    <!-- SIDEBAR (FIMRO STYLE) -->
     <aside class="fimro-sidebar">
-      <a href="#" class="sidebar-icon role-admin-only" id="sidebar-dashboard" onclick="switchSection('dashboard')" title="Dashboard"><i class="fa-solid fa-house"></i></a>
-      <a href="#" class="sidebar-icon" id="sidebar-evaluations" onclick="switchSection('evaluations')" title="Evaluations"><i class="fa-solid fa-star"></i></a>
-      <a href="#" class="sidebar-icon" id="sidebar-submit-eval" onclick="switchSection('submit-eval')" title="Submit"><i class="fa-solid fa-pen-to-square"></i></a>
-      <a href="#" class="sidebar-icon role-admin-only" id="sidebar-settings" onclick="switchSection('settings')" title="Settings"><i class="fa-solid fa-gear"></i></a>
-      <a href="#" class="sidebar-icon role-admin-only" id="sidebar-users" onclick="switchSection('users')" title="Users"><i class="fa-solid fa-users-gear"></i></a>
-      <a href="#" class="sidebar-icon logout" onclick="window.location.href='../index.html'" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon role-admin-only" id="sidebar-dashboard" onclick="switchSection('dashboard')" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon" id="sidebar-evaluations" onclick="switchSection('evaluations')" title="Evaluations"><i class="fa-solid fa-star"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon" id="sidebar-submit-eval" onclick="switchSection('submit-eval')" title="Submit"><i class="fa-solid fa-pen-to-square"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon role-admin-only" id="sidebar-settings" onclick="switchSection('settings')" title="Settings"><i class="fa-solid fa-gear"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon role-admin-only" id="sidebar-users" onclick="switchSection('users')" title="Users"><i class="fa-solid fa-users-gear"></i></a>
+      <a href="javascript:void(0)" class="sidebar-icon logout" onclick="logout()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
     </aside>
 
     <main class="fimro-main">
       
-      <!-- ══ SECTION: MULTI-STEP EVALUATION ══ -->
+      <!-- SECTION: SUBMIT EVAL -->
       <section class="content-section" id="section-submit-eval">
         <div class="multistep-container">
-          <div class="multistep-header">
-            <div class="progress-bar-container">
-              <div class="progress-fill" id="form-progress" style="width: 33%;"></div>
-            </div>
-          </div>
-
           <div class="card multistep-card">
+            <div class="progress-bar-container" style="margin-bottom:30px; background:rgba(0,0,0,0.05); height:8px; border-radius:10px; overflow:hidden;">
+              <div class="progress-fill" id="form-progress" style="width: 33.33%; background:var(--primary); height:100%; transition:0.3s;"></div>
+            </div>
             <form id="evaluation-form" onsubmit="return false;">
-              
-              <!-- STEP 1: TARGET -->
+              <!-- STEP 1 -->
               <div class="form-step active" id="step-1">
-                <h2>من تريد أن تقيم؟</h2>
+                <h2 style="margin-bottom:20px;">من تريد أن تقيم؟</h2>
                 <div class="eval-options-grid-fimro">
                   <label class="fimro-opt">
                     <input type="radio" name="eval-target" value="employee" checked onchange="updateEvalTargetUI()" />
-                    <div class="opt-box"><i class="fa-solid fa-user"></i><span data-en="Employee" data-ar="موظف">Employee</span></div>
+                    <div class="opt-box"><i class="fa-solid fa-user"></i><br><span>موظف</span></div>
                   </label>
                   <label class="fimro-opt">
                     <input type="radio" name="eval-target" value="department" onchange="updateEvalTargetUI()" />
-                    <div class="opt-box"><i class="fa-solid fa-building"></i><span data-en="Department" data-ar="قسم">Department</span></div>
+                    <div class="opt-box"><i class="fa-solid fa-building"></i><br><span>قسم</span></div>
                   </label>
                 </div>
-                <div class="form-group mt-20">
-                  <select class="fimro-select" id="target-dropdown">
-                    <option value="" data-en="Choose..." data-ar="اختر...">Choose...</option>
-                  </select>
-                </div>
-                <div class="step-actions">
-                  <button type="button" class="btn btn-fimro-next" onclick="nextStep(2)">
-                    <span data-en="Next" data-ar="التالي">Next</span> <i class="fa-solid fa-arrow-right"></i>
-                  </button>
-                </div>
+                <select class="fimro-select" id="target-dropdown" style="margin-bottom:20px;"><option value="">اختر...</option></select>
+                <button type="button" class="btn-fimro-primary" style="width:100%" onclick="nextStep(2)">التالي</button>
               </div>
-
-              <!-- STEP 2: QUALITY -->
+              <!-- STEP 2 -->
               <div class="form-step" id="step-2">
-                <h2>الجودة والأداء</h2>
+                <h2 style="margin-bottom:20px;">الجودة والأداء</h2>
                 <div id="dynamic-questions-container"></div>
-                <div class="step-actions">
-                  <button type="button" class="btn btn-fimro-prev" onclick="nextStep(1)">
-                    <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-ar="السابق">Back</span>
-                  </button>
-                  <button type="button" class="btn btn-fimro-next" onclick="nextStep(3)">
-                    <span data-en="Next" data-ar="التالي">Next</span> <i class="fa-solid fa-arrow-right"></i>
-                  </button>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                  <button type="button" class="btn-fimro-primary" style="flex:1; background:var(--text-dim)" onclick="nextStep(1)">السابق</button>
+                  <button type="button" class="btn-fimro-primary" style="flex:2" onclick="nextStep(3)">التالي</button>
                 </div>
               </div>
-
-              <!-- STEP 3: FEEDBACK -->
+              <!-- STEP 3 -->
               <div class="form-step" id="step-3">
-                <div id="bear" style="margin-bottom: 20px;">
-                    <div id="head">
-                        <div id="eyes" :style="{transform: 'translate(' + eye.x + 'px,' + eye.y + 'px)'}">
-                            <div class="eye"></div>
-                            <div class="eye"></div>
-                        </div>
-                        <div id="facial" :style="{transform: 'translate(' + facial.x + 'px,' + facial.y + 'px)'}">
-                            <div id="nose"></div>
-                            <div id="mouth"></div>
-                        </div>
-                        <div id="ears">
-                            <div class="ear"></div>
-                            <div class="ear"></div>
-                        </div>
-                    </div>
+                <div id="bear">
+                  <div id="head">
+                    <div id="eyes" :style="{transform: 'translate(' + eye.x + 'px,' + eye.y + 'px)'}"><div class="eye"></div><div class="eye"></div></div>
+                    <div id="facial" :style="{transform: 'translate(' + facial.x + 'px,' + facial.y + 'px)'}"><div id="nose"></div><div id="mouth"></div></div>
+                    <div id="ears"><div class="ear"></div><div class="ear"></div></div>
+                  </div>
                 </div>
-                <div style="text-align:center; margin-bottom:15px">
-                   <h2 style="margin-bottom:5px">الملاحظات النهائية</h2>
+                <h2 style="text-align:center; margin-bottom:15px;">الملاحظات النهائية</h2>
+                <textarea class="fimro-textarea" v-model="commentText" id="eval-comment" rows="4" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+                <div style="margin:15px 0; display:flex; align-items:center; gap:10px;">
+                  <input type="checkbox" id="anonymous-eval"> <label for="anonymous-eval">إرسال كتقييم مجهول</label>
                 </div>
-                <div class="form-group">
-                  <textarea class="fimro-textarea" id="eval-comment" v-model="commentText" rows="5" placeholder="Write your mandatory feedback here..." data-en-placeholder="Write your mandatory feedback here..." data-ar-placeholder="اكتب ملاحظاتك الإجبارية هنا..."></textarea>
-                </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:10px; background:rgba(255,255,255,0.05); padding:15px; border-radius:16px; border:1px solid rgba(255,255,255,0.1)">
-                  <input type="checkbox" id="anonymous-eval" style="width:20px; height:20px; cursor:pointer" />
-                  <label for="anonymous-eval" style="margin:0; cursor:pointer; font-size:14px; color:var(--text-main)" data-en="Submit as Anonymous (Hide my name)" data-ar="إرسال كتقييم مجهول (إخفاء اسمي)">إرسال كتقييم مجهول (إخفاء اسمي)</label>
-                </div>
-                <div class="step-actions">
-                  <button type="button" class="btn btn-fimro-prev" onclick="nextStep(2)">
-                    <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-ar="السابق">Back</span>
-                  </button>
-                  <button type="button" class="btn btn-fimro-primary" id="submit-btn" onclick="submitEvaluation()">
-                    <span data-en="Submit Evaluation" data-ar="إرسال التقييم">Submit Evaluation</span>
-                  </button>
+                <div style="display:flex; gap:10px;">
+                  <button type="button" class="btn-fimro-primary" style="flex:1; background:var(--text-dim)" onclick="nextStep(2)">السابق</button>
+                  <button type="button" class="btn-fimro-primary" style="flex:2" onclick="submitEvaluation()">إرسال التقييم</button>
                 </div>
               </div>
-
             </form>
           </div>
         </div>
       </section>
 
-      <!-- ══ SECTION: DASHBOARD ══ -->
+      <!-- SECTION: DASHBOARD -->
       <section class="content-section" id="section-dashboard">
-        <div class="dashboard-wrapper" id="app-vue-stats">
+        <div class="dashboard-wrapper">
           <div class="hero-content">
-            <h1 data-en="The Future of HR Evaluation" data-ar="مستقبل تقييم الموارد البشرية">مستقبل تقييم الموارد البشرية</h1>
-            <p data-en="Hey! We're glad to see you again. Ready to transform performance today?" data-ar="مرحباً بك! يسعدنا رؤيتك مرة أخرى. هل أنت مستعد لتحويل الأداء اليوم؟">مرحباً بك! يسعدنا رؤيتك مرة أخرى. هل أنت مستعد لتحويل الأداء اليوم؟</p>
+            <h1>لوحة التحكم</h1>
+            <p>مرحباً بك مجدداً في Arena</p>
           </div>
           <div class="hero-stats">
-            <div class="h-stat"><span id="total-evals-count">0</span><label data-en="Total" data-ar="الإجمالي">Total</label></div>
-            <div class="h-stat"><span id="pending-evals-count">0</span><label data-en="Pending" data-ar="معلق">Pending</label></div>
+            <div class="h-stat"><span id="total-evals-count">0</span><label>الإجمالي</label></div>
+            <div class="h-stat"><span id="pending-evals-count">0</span><label>المعلقة</label></div>
           </div>
         </div>
-
         <div class="admin-tabs-fimro">
-          <button class="tab-btn active" onclick="switchAdminTab('pending')" data-en="Pending" data-ar="المعلقة">Pending</button>
-          <button class="tab-btn" onclick="switchAdminTab('completed')" data-en="Completed" data-ar="المكتملة">Completed</button>
+          <button class="tab-btn active" onclick="switchAdminTab('pending')">المعلقة</button>
+          <button class="tab-btn" onclick="switchAdminTab('completed')">المكتملة</button>
         </div>
-
-        <div class="card table-card-fimro" style="overflow-x: auto;">
+        <div class="card" style="overflow-x:auto">
           <table class="fimro-table">
-            <thead>
-              <tr>
-                <th data-en="Date" data-ar="التاريخ">Date</th>
-                <th data-en="Target" data-ar="الهدف">Target</th>
-                <th data-en="Score" data-ar="النتيجة">Score</th>
-                <th data-en="Comment" data-ar="الملاحظة">Comment</th>
-                <th data-en="Status" data-ar="الحالة">Status</th>
-                <th data-en="Actions" data-ar="الإجراءات">Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>التاريخ</th><th>الهدف</th><th>النتيجة</th><th>الملاحظة</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
             <tbody id="admin-eval-table-body"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- ══ SECTION: EVALUATIONS GRID ══ -->
+      <!-- SECTION: EVALUATIONS -->
       <section class="content-section" id="section-evaluations">
-        <h2 class="section-title-fimro" data-en="Approved Feedback" data-ar="الملاحظات المعتمدة">Approved Feedback</h2>
-        <div class="eval-grid-fimro" id="public-eval-grid"></div>
+        <h2 style="margin-bottom:24px;">التقييمات المعتمدة</h2>
+        <div class="eval-grid-fimro" id="public-eval-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;"></div>
       </section>
 
-      <!-- Settings -->
-      <section class="content-section" id="section-settings">
-        <!-- Organization Management (Admin Only) -->
-        <div class="card settings-card-fimro role-admin-only" style="margin-bottom:24px">
-          <h2 style="margin-bottom:18px; display:flex; align-items:center; gap:10px;" data-en="Organization Management" data-ar="إدارة المنظمة"><i class="fa-solid fa-building-user" style="color:var(--primary)"></i> إدارة المنظمة</h2>
-          
-          <!-- Employees Management -->
-          <div style="margin-bottom:24px;">
-            <h3 style="margin-bottom:12px; font-size:16px;" data-en="Employees" data-ar="الموظفون">الموظفون</h3>
-            <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-              <input type="text" class="fimro-input" id="new-employee-name" placeholder="اسم الموظف" style="flex:1; min-width:200px;" />
-              <button class="btn btn-fimro-primary" onclick="addEmployee()" style="padding:0 20px;"><i class="fa-solid fa-user-plus"></i> إضافة</button>
-            </div>
-            <div id="employees-msg" style="font-size:13px;margin-bottom:12px"></div>
-            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;max-height:200px;overflow-y:auto">
-              <div id="employees-list" style="display:flex;flex-direction:column;gap:12px"></div>
-            </div>
-          </div>
-
-          <!-- Departments Management -->
-          <div>
-            <h3 style="margin-bottom:12px; font-size:16px;" data-en="Departments" data-ar="الأقسام">الأقسام</h3>
-            <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-              <input type="text" class="fimro-input" id="new-department-name" placeholder="اسم القسم" style="flex:1; min-width:200px;" />
-              <button class="btn btn-fimro-primary" onclick="addDepartment()" style="padding:0 20px;"><i class="fa-solid fa-building-circle-plus"></i> إضافة</button>
-            </div>
-            <div id="departments-msg" style="font-size:13px;margin-bottom:12px"></div>
-            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;max-height:200px;overflow-y:auto">
-              <div id="departments-list" style="display:flex;flex-direction:column;gap:12px"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Questions Management (Admin Only) -->
-        <div class="card settings-card-fimro role-admin-only" style="margin-bottom:24px">
-          <h2 style="margin-bottom:18px" data-en="Manage Questions" data-ar="إدارة الأسئلة">إدارة الأسئلة</h2>
-          <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px">
-            <div style="display:flex;gap:12px;flex-wrap:wrap;">
-              <div class="form-group" style="flex:1;min-width:250px;margin:0">
-                <label>السؤال (بالعربي)</label>
-                <input type="text" class="fimro-input" id="new-question-ar" placeholder="اكتب السؤال هنا..." />
-              </div>
-              <div class="form-group" style="flex:1;min-width:250px;margin:0">
-                <label>الترجمة الإنجليزية</label>
-                <input type="text" class="fimro-input" id="new-question-en" placeholder="الترجمة..." />
-              </div>
-            </div>
-            <button class="btn btn-fimro-primary" onclick="addQuestion()" style="align-self:flex-start;"><i class="fa-solid fa-plus"></i> إضافة سؤال</button>
-            <div id="questions-msg" style="font-size:13px;"></div>
-          </div>
-          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:16px;max-height:300px;overflow-y:auto">
-            <div id="questions-list" style="display:flex;flex-direction:column;gap:12px"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Users Management -->
+      <!-- SECTION: USERS -->
       <section class="content-section" id="section-users">
-        <div class="card settings-card-fimro">
-          <h2 style="margin-bottom:20px" data-en="User Management" data-ar="إدارة المستخدمين">إدارة المستخدمين</h2>
-          <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-            <input type="text" class="fimro-input" id="new-username" placeholder="اسم المستخدم" style="flex:1;min-width:150px;" />
-            <input type="password" class="fimro-input" id="new-password" placeholder="كلمة المرور" style="flex:1;min-width:150px;" />
-            <button class="btn btn-fimro-primary" onclick="addUser()">إضافة</button>
-          </div>
-          <div id="user-msg" style="margin-bottom:15px; font-size:13px;"></div>
-          <div class="table-card-fimro" style="overflow-x: auto;">
-            <table class="fimro-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Results Access</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-table-body"></tbody>
-            </table>
-          </div>
+        <div class="card">
+          <h2 style="margin-bottom:20px;">إدارة المستخدمين</h2>
+          <table class="fimro-table">
+            <thead><tr><th>المستخدم</th><th>الصلاحية</th><th>رؤية النتائج</th><th>إجراء</th></tr></thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
         </div>
       </section>
+
+      <!-- SECTION: SETTINGS -->
+      <section class="content-section" id="section-settings">
+        <div class="card"><h2>إدارة المنظمة والأسئلة</h2><p>يمكنك إضافة الموظفين والأقسام والأسئلة من هنا.</p></div>
+      </section>
+
     </main>
   </div>
 
-  <!-- SUCCESS MODAL -->
-  <div class="modal-overlay" id="successModal">
-    <div class="modal-content" style="text-align: center;">
-      <div class="success-icon-wrap">✓</div>
-      <h2 style="margin-bottom: 12px;">شكراً لتقييمك!</h2>
-      <p style="color: var(--text-dim); margin-bottom: 32px;">تم إرسال تقييمك بنجاح وسيكون متاحاً بعد موافقة المسؤول.</p>
-      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn btn-fimro-primary" onclick="closeSuccessAndGoToResults()">
-          <i class="fa-solid fa-star"></i> عرض التقييمات العامة
-        </button>
-        <button class="btn btn-fimro-prev" onclick="closeSuccessModal()">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LOADING MODAL -->
-  <div class="modal-overlay" id="loadingModal">
-    <div class="modal-content" style="text-align: center;">
-      <div class="spinner-fimro" style="margin-bottom: 20px;"></div>
-      <h2 style="margin-bottom: 12px;">جاري الإرسال...</h2>
-      <p style="color: var(--text-dim);">يرجى الانتظار قليلاً</p>
-    </div>
-  </div>
-
-  <!-- EVALUATION DETAILS MODAL -->
+  <!-- MODALS -->
   <div class="modal-overlay" id="evalModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">تفاصيل التقييم</h2>
-        <button class="modal-close" onclick="closeEvalModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="eval-details-grid">
-          <div class="detail-item">
-            <label data-ar="الشخص اللي تقيم" data-en="Rated Person">الشخص اللي تقيم</label>
-            <p id="modalTarget">–</p>
-          </div>
-          <div class="detail-item">
-            <label data-ar="الدرجة النهائية" data-en="Final Score">الدرجة النهائية</label>
-            <p id="modalRatingCount">–</p>
-          </div>
-          <div class="detail-item">
-            <label data-ar="المقيم" data-en="Rated By">المقيم</label>
-            <p id="modalSubmittedBy">–</p>
-          </div>
-          <div class="detail-item">
-            <label data-ar="التاريخ" data-en="Date">التاريخ</label>
-            <p id="modalDate">–</p>
-          </div>
-        </div>
-        <div class="detail-section">
-          <label data-ar="الأسئلة والدرجات" data-en="Questions & Ratings">الأسئلة والدرجات</label>
-          <div id="modalQuestionsRatings" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 12px;">–</div>
-        </div>
-        <div class="detail-section">
-          <label data-ar="الملاحظات" data-en="Comments">الملاحظات</label>
-          <p id="modalComment" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); line-height: 1.6;">–</p>
-        </div>
-      </div>
+      <h2 id="modalTarget" style="margin-bottom:15px"></h2>
+      <div id="modalQuestionsRatings" style="margin-bottom:20px"></div>
+      <p id="modalComment" style="background:rgba(0,0,0,0.05); padding:15px; border-radius:12px; margin-bottom:20px"></p>
+      <button class="btn-fimro-primary" style="width:100%" onclick="closeEvalModal()">إغلاق</button>
     </div>
   </div>
-
-  <style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .status-pill { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .status-pill.Pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-    .status-pill.Approved { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-    .status-pill.Rejected { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-    
-    .question-rating-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: rgba(255,255,255,0.02);
-      border-radius: 8px;
-    }
-    .rating-badge-mini {
-      background: var(--primary);
-      color: #fff;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 12px;
-    }
-    .success-icon-wrap {
-      width: 60px; height: 60px; background: var(--success); color: #fff; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 20px;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-    }
-    .role-select-mini {
-      background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: 12px;
-    }
-  </style>
 
   <script>
     const API = 'https://arena-server-c8xo.onrender.com';
-    
-    let evaluations    = [];
+    let currentUser = JSON.parse(sessionStorage.getItem('arena_user')) || { username: 'Guest', role: 'user' };
+    let evaluations = [];
     let currentAdminTab = 'pending';
-    let currentUser    = { role: 'admin', username: 'Khalid' };
 
-    window.addEventListener('DOMContentLoaded', function () {
-      const userStr = sessionStorage.getItem('arena_user');
-      if (userStr) {
-        try {
-          currentUser = JSON.parse(userStr);
-          document.getElementById('body-root').className = 'role-' + currentUser.role;
-          showPage('app-shell');
-          switchSection(currentUser.role === 'admin' ? 'dashboard' : 'submit-eval');
-        } catch(e) { window.location.href = '../index.html'; }
-      } else {
-        window.location.href = '../index.html';
-      }
-      
-      const savedTheme = localStorage.getItem('arena-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      updateThemeIcon(savedTheme);
-
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!sessionStorage.getItem('arena_user')) window.location.href = '../index.html';
+      checkRole();
       loadEvaluations();
-      loadFormQuestions();
-      loadEmployees();
-      loadDepartments();
+      updateEvalTargetUI();
+      loadUsers();
+      
+      // Auto-switch based on role
+      switchSection(currentUser.role === 'admin' ? 'dashboard' : 'submit-eval');
     });
 
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
+    function checkRole() {
+      const body = document.getElementById('body-root');
+      body.className = currentUser.role === 'admin' ? 'role-admin' : 'role-user';
     }
-    function switchSection(name) {
+
+    function switchSection(id) {
       document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-      const section = document.getElementById('section-' + name);
-      if (section) section.classList.add('active');
+      document.getElementById('section-' + id).classList.add('active');
       document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
-      const icon = document.getElementById('sidebar-' + name) || document.querySelector(`.sidebar-icon[onclick*="'${name}'"]`);
+      const icon = document.getElementById('sidebar-' + id);
       if (icon) icon.classList.add('active');
-      
-      if (name === 'users') loadUsers();
-      if (name === 'settings') { loadQuestions(); loadEmployees(); loadDepartments(); }
     }
 
     async function loadEvaluations() {
@@ -420,131 +199,27 @@
         evaluations = await res.json();
         renderAdminTable();
         renderPublicGrid();
-      } catch (e) { console.error(e); }
-    }
-
-    async function loadFormQuestions() {
-      try {
-        const res = await fetch(`${API}/questions`);
-        const questions = await res.json();
-        const container = document.getElementById('dynamic-questions-container');
-        if (!container) return;
-        const lang = document.documentElement.getAttribute('data-lang');
-        container.innerHTML = questions.map(q => `
-          <div class="quality-item">
-            <label data-en="${q.questionTextEn}" data-ar="${q.questionText}">${lang === 'en' ? q.questionTextEn : q.questionText}</label>
-            <div class="fimro-rating-numbers">
-              ${[5,4,3,2,1].map(num => `
-                <input type="radio" name="dq-${q.id}" value="${num}" id="dq-${q.id}-${num}" data-q-ar="${q.questionText}" data-q-en="${q.questionTextEn}">
-                <label for="dq-${q.id}-${num}">${num}</label>
-              `).join('')}
-            </div>
-          </div>
-        `).join('');
-      } catch (e) { console.error(e); }
-    }
-
-    async function submitEvaluation() {
-      const comment = (window.APP && window.APP.commentText) ? window.APP.commentText.trim() : document.getElementById('eval-comment').value.trim();
-      const target  = document.getElementById('target-dropdown').value;
-      const lang = document.documentElement.getAttribute('data-lang') || 'ar';
-      
-      const details = [];
-      document.querySelectorAll('#dynamic-questions-container input[type="radio"]:checked').forEach(input => {
-        details.push({
-          questionAr: input.getAttribute('data-q-ar'),
-          questionEn: input.getAttribute('data-q-en'),
-          score: parseInt(input.value)
-        });
-      });
-      
-      if (!target || details.length === 0 || !comment) {
-        showToast(lang === 'ar' ? 'يرجى إكمال جميع الخطوات والملاحظات!' : 'Please complete all steps and comments!', 'warn');
-        return;
-      }
-      
-      const avgScore = (details.reduce((a, b) => a + b.score, 0) / details.length).toFixed(1);
-      const btn = document.getElementById('submit-btn');
-      btn.disabled = true;
-      document.getElementById('loadingModal').classList.add('show');
-
-      try {
-        const res = await fetch(`${API}/evaluations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetName: target,
-            avgScore: avgScore,
-            details: details,
-            comment: comment,
-            submittedBy: document.getElementById('anonymous-eval').checked ? 'مجهول' : currentUser.username,
-            status: 'Pending'
-          })
-        });
-        const data = await res.json();
-        document.getElementById('loadingModal').classList.remove('show');
-        if (data.success) {
-          document.getElementById('successModal').classList.add('show');
-          document.getElementById('evaluation-form').reset();
-          if (window.APP) window.APP.commentText = '';
-          nextStep(1);
-          loadEvaluations();
-        }
-      } catch (e) { 
-        document.getElementById('loadingModal').classList.remove('show');
-        showToast('❌ خطأ في الاتصال', 'err'); 
-      } finally { btn.disabled = false; }
-    }
-
-    async function updateStatus(idx, newStatus) {
-      const ev = evaluations[idx];
-      try {
-        await fetch(`${API}/evaluations/${ev.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-        loadEvaluations();
-      } catch (e) { console.error(e); }
-    }
-
-    async function deleteEvaluation(id) {
-      if (!confirm('هل أنت متأكد من حذف هذا التقييم نهائياً؟')) return;
-      try {
-        const res = await fetch(`${API}/evaluations/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('تم الحذف نهائياً ✅', 'ok');
-          loadEvaluations();
-        }
-      } catch (e) { showToast('❌ فشل الحذف', 'err'); }
+      } catch(e) { console.error(e); }
     }
 
     function renderAdminTable() {
       const tbody = document.getElementById('admin-eval-table-body');
       if (!tbody) return;
       const filtered = evaluations.filter(ev => currentAdminTab === 'pending' ? ev.status === 'Pending' : ev.status !== 'Pending');
-      tbody.innerHTML = filtered.length ? filtered.map(ev => {
-        const idx = evaluations.indexOf(ev);
-        const dateStr = ev.createdAt ? new Date(ev.createdAt).toLocaleDateString('ar-SA') : '–';
-        return `
-          <tr>
-            <td>${dateStr}</td>
-            <td>${ev.targetName}</td>
-            <td>${ev.avgScore} / 5</td>
-            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ev.comment}</td>
-            <td><span class="status-pill ${ev.status}">${ev.status}</span></td>
-            <td style="display:flex; gap:8px;">
-              <button class="btn-approve" onclick="showEvalModal(${idx})" title="التفاصيل"><i class="fa-solid fa-eye"></i></button>
-              ${ev.status === 'Pending' ? `
-                <button class="btn-approve" onclick="updateStatus(${idx},'Approved')" title="قبول"><i class="fa-solid fa-check"></i></button>
-                <button class="btn-reject"  onclick="updateStatus(${idx},'Rejected')" title="رفض"><i class="fa-solid fa-xmark"></i></button>
-              ` : ''}
-              <button class="btn-reject" onclick="deleteEvaluation(${ev.id})" title="حذف نهائي"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          </tr>`;
-      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:30px;opacity:.5">لا توجد تقييمات</td></tr>';
-      
+      tbody.innerHTML = filtered.map(ev => `
+        <tr>
+          <td>${new Date(ev.createdAt).toLocaleDateString('ar-SA')}</td>
+          <td>${ev.targetName}</td>
+          <td>${ev.avgScore} / 5</td>
+          <td>${ev.comment}</td>
+          <td><span class="status-pill ${ev.status}">${ev.status}</span></td>
+          <td class="actions-cell">
+            <button class="btn-details" onclick="showEvalModal(${evaluations.indexOf(ev)})"><i class="fa-solid fa-eye"></i></button>
+            ${ev.status === 'Pending' ? `<button class="btn-approve" onclick="updateStatus(${ev.id},'Approved')"><i class="fa-solid fa-check"></i></button>` : ''}
+            <button class="btn-reject" onclick="deleteEvaluation(${ev.id})"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
       document.getElementById('total-evals-count').textContent = evaluations.length;
       document.getElementById('pending-evals-count').textContent = evaluations.filter(e => e.status === 'Pending').length;
     }
@@ -552,49 +227,33 @@
     function renderPublicGrid() {
       const grid = document.getElementById('public-eval-grid');
       if (!grid) return;
-      const visible = evaluations.filter(e => e.status === 'Approved');
-      grid.innerHTML = visible.length ? visible.map(ev => {
-        const idx = evaluations.indexOf(ev);
-        return `
-          <div class="fimro-card-eval" onclick="showEvalModal(${idx})" style="cursor:pointer">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-              <h3 style="font-size:16px;">${ev.targetName}</h3>
-              <span class="rating-badge-mini">${ev.avgScore} / 5</span>
-            </div>
-            <p style="font-size:13px; opacity:0.8; line-height:1.5; height:60px; overflow:hidden;">${ev.comment}</p>
-            <div style="margin-top:10px; font-size:11px; opacity:0.5; display:flex; justify-content:space-between;">
-              <span>${new Date(ev.createdAt).toLocaleDateString('ar-SA')}</span>
-              <span>بواسطة: ${ev.submittedBy}</span>
-            </div>
-          </div>
-        `;
-      }).join('') : '<p style="opacity:0.5">لا توجد تقييمات معتمدة حالياً</p>';
+      grid.innerHTML = evaluations.filter(e => e.status === 'Approved').map(ev => `
+        <div class="card" style="margin-bottom:0">
+          <h3>${ev.targetName}</h3>
+          <p>${ev.comment}</p>
+          <div style="margin-top:10px; font-size:12px; opacity:0.6">${ev.avgScore} / 5</div>
+        </div>
+      `).join('');
     }
 
     function showEvalModal(idx) {
       const ev = evaluations[idx];
-      const lang = document.documentElement.getAttribute('data-lang') || 'ar';
       document.getElementById('modalTarget').textContent = ev.targetName;
-      document.getElementById('modalRatingCount').textContent = ev.avgScore + ' / 5';
-      document.getElementById('modalSubmittedBy').textContent = ev.submittedBy;
-      document.getElementById('modalDate').textContent = new Date(ev.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US');
       document.getElementById('modalComment').textContent = ev.comment;
-      
-      const container = document.getElementById('modalQuestionsRatings');
-      let details = [];
-      try { details = typeof ev.details === 'string' ? JSON.parse(ev.details) : ev.details; } catch(e) {}
-      
-      if (Array.isArray(details) && details.length > 0) {
-        container.innerHTML = details.map(d => `
-          <div class="question-rating-row">
-            <span style="font-size:14px;">${lang === 'ar' ? d.questionAr : d.questionEn}</span>
-            <span class="rating-badge-mini">${d.score} / 5</span>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = '<p style="opacity:0.5; text-align:center;">لا توجد تفاصيل إضافية</p>';
-      }
       document.getElementById('evalModal').classList.add('show');
+    }
+    function closeEvalModal() { document.getElementById('evalModal').classList.remove('show'); }
+
+    async function updateStatus(id, status) {
+      await fetch(`${API}/evaluations/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+      loadEvaluations();
+    }
+
+    async function deleteEvaluation(id) {
+      if (confirm('حذف نهائي؟')) {
+        await fetch(`${API}/evaluations/${id}`, { method: 'DELETE' });
+        loadEvaluations();
+      }
     }
 
     function nextStep(s) {
@@ -602,86 +261,13 @@
       document.getElementById('step-' + s).classList.add('active');
       document.getElementById('form-progress').style.width = (s * 33.33) + '%';
     }
-    function closeEvalModal() { document.getElementById('evalModal').classList.remove('show'); }
-    function closeSuccessModal() { document.getElementById('successModal').classList.remove('show'); }
-    function closeSuccessAndGoToResults() { closeSuccessModal(); switchSection('evaluations'); }
-    function showToast(m, t) {
-      const toast = document.createElement('div');
-      toast.className = 'arena-toast-msg';
-      toast.style.borderColor = t === 'ok' ? '#10b981' : '#ef4444';
-      toast.textContent = m;
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
-      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
-    }
-    
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('arena-theme', next);
-      updateThemeIcon(next);
-    }
-    function updateThemeIcon(theme) {
-      const btn = document.getElementById('theme-toggle-btn');
-      if (btn) btn.innerHTML = theme === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
-    }
 
-    function setLanguage(l) {
-      document.documentElement.setAttribute('data-lang', l);
-      document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
-      document.getElementById('lang-label').textContent = l.toUpperCase();
-    }
-    function toggleLanguage() { setLanguage(document.documentElement.getAttribute('data-lang') === 'ar' ? 'en' : 'ar'); }
-    function switchAdminTab(t) {
-      currentAdminTab = t;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(t)));
-      renderAdminTable();
-    }
-
-    async function loadEmployees() {
-      const res = await fetch(`${API}/employees`);
+    async function updateEvalTargetUI() {
+      const type = document.querySelector('input[name="eval-target"]:checked').value;
+      const res = await fetch(`${API}/${type === 'employee' ? 'employees' : 'departments'}`);
       const data = await res.json();
-      const list = document.getElementById('employees-list');
-      if (list) list.innerHTML = data.map(e => `<div class="question-rating-row"><span>${e.name}</span><button class="btn-reject" onclick="deleteEmployee(${e.id})">حذف</button></div>`).join('');
+      document.getElementById('target-dropdown').innerHTML = '<option value="">اختر...</option>' + data.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
     }
-    async function addEmployee() {
-      const name = document.getElementById('new-employee-name').value;
-      await fetch(`${API}/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-      document.getElementById('new-employee-name').value = '';
-      loadEmployees();
-    }
-    async function deleteEmployee(id) { await fetch(`${API}/employees/${id}`, { method: 'DELETE' }); loadEmployees(); }
-
-    async function loadDepartments() {
-      const res = await fetch(`${API}/departments`);
-      const data = await res.json();
-      const list = document.getElementById('departments-list');
-      if (list) list.innerHTML = data.map(d => `<div class="question-rating-row"><span>${d.name}</span><button class="btn-reject" onclick="deleteDepartment(${d.id})">حذف</button></div>`).join('');
-    }
-    async function addDepartment() {
-      const name = document.getElementById('new-department-name').value;
-      await fetch(`${API}/departments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-      document.getElementById('new-department-name').value = '';
-      loadDepartments();
-    }
-    async function deleteDepartment(id) { await fetch(`${API}/departments/${id}`, { method: 'DELETE' }); loadDepartments(); }
-
-    async function loadQuestions() {
-      const res = await fetch(`${API}/questions`);
-      const data = await res.json();
-      const list = document.getElementById('questions-list');
-      if (list) list.innerHTML = data.map(q => `<div class="question-rating-row"><span>${q.questionText}</span><button class="btn-reject" onclick="deleteQuestion(${q.id})">حذف</button></div>`).join('');
-    }
-    async function addQuestion() {
-      const ar = document.getElementById('new-question-ar').value;
-      const en = document.getElementById('new-question-en').value;
-      await fetch(`${API}/questions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionText: ar, questionTextEn: en }) });
-      document.getElementById('new-question-ar').value = '';
-      document.getElementById('new-question-en').value = '';
-      loadQuestions();
-    }
-    async function deleteQuestion(id) { await fetch(`${API}/questions/${id}`, { method: 'DELETE' }); loadQuestions(); }
 
     async function loadUsers() {
       const res = await fetch(`${API}/users`);
@@ -690,53 +276,30 @@
       if (tbody) tbody.innerHTML = data.map(u => `
         <tr>
           <td>${u.username}</td>
-          <td>
-            <select class="role-select-mini" onchange="updateUserRole(${u.id}, this.value)">
-              <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-            </select>
-          </td>
-          <td>
-            <select class="role-select-mini" onchange="updateUserAccess(${u.id}, this.value)">
-              <option value="0" ${u.canViewResults == 0 ? 'selected' : ''}>Hidden</option>
-              <option value="1" ${u.canViewResults == 1 ? 'selected' : ''}>Visible</option>
-            </select>
-          </td>
+          <td><select class="role-select-mini" onchange="updateUserRole(${u.id},this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
+          <td><select class="role-select-mini" onchange="updateUserAccess(${u.id},this.value)"><option value="0" ${u.canViewResults==0?'selected':''}>Hidden</option><option value="1" ${u.canViewResults==1?'selected':''}>Visible</option></select></td>
           <td><button class="btn-reject" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button></td>
-        </tr>`).join('');
-    }
-    async function updateUserRole(id, role) {
-      await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
-      showToast('تم تحديث الصلاحية', 'ok');
-    }
-    async function updateUserAccess(id, access) {
-      await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ canViewResults: parseInt(access) }) });
-      showToast('تم تحديث إمكانية العرض', 'ok');
-    }
-    async function deleteUser(id) { if(confirm('حذف المستخدم؟')) { await fetch(`${API}/users/${id}`, { method: 'DELETE' }); loadUsers(); } }
-    async function addUser() {
-      const u = document.getElementById('new-username').value;
-      const p = document.getElementById('new-password').value;
-      await fetch(`${API}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
-      document.getElementById('new-username').value = '';
-      document.getElementById('new-password').value = '';
-      loadUsers();
+        </tr>
+      `).join('');
     }
 
-    async function updateEvalTargetUI() {
-      const type = document.querySelector('input[name="eval-target"]:checked').value;
-      const res = await fetch(`${API}/${type === 'employee' ? 'employees' : 'departments'}`);
-      const data = await res.json();
-      const drop = document.getElementById('target-dropdown');
-      drop.innerHTML = '<option value="">اختر...</option>' + data.map(item => `<option value="${item.name}">${item.name}</option>`).join('');
+    async function updateUserRole(id, role) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) }); }
+    async function updateUserAccess(id, canViewResults) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ canViewResults }) }); }
+    async function deleteUser(id) { if(confirm('حذف؟')) { await fetch(`${API}/users/${id}`, { method: 'DELETE' }); loadUsers(); } }
+
+    function logout() { sessionStorage.clear(); window.location.href = '../index.html'; }
+    function toggleTheme() {
+      const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('arena-theme', theme);
     }
 
     new Vue({
       el: '#step-3',
       data: { commentText: '' },
       computed: {
-        eye() { let l = this.commentText.length; let x = Math.min(l, 33); let y = l < 18 ? x * 0.2 : (36 - x) * 0.2; return { x: -26 + (x * 0.3), y: y }; },
-        facial() { let l = this.commentText.length; let x = Math.min(l, 33); let y = l < 18 ? -6 + (x * 0.2) : -6 + ((36 - x) * 0.2); return { x: -12 + (x * 0.3), y: y }; }
+        eye() { let l = this.commentText.length; return { x: Math.min(l * 0.2, 5), y: Math.min(l * 0.1, 3) }; },
+        facial() { let l = this.commentText.length; return { x: Math.min(l * 0.1, 3), y: Math.min(l * 0.05, 2) }; }
       }
     });
   </script>
