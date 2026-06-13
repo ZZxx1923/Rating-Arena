@@ -318,7 +318,12 @@ app.get("/evaluations", (req, res) => {
         (err, result) => {
             if (err) {
                 console.error("Get Evaluations Error:", err);
-                return res.status(500).json({ message: "خطأ في قاعدة البيانات", error: err.message });
+                // محاولة استعلام بديل في حال كان اسم العمود مختلفاً (createdAt vs created_at)
+                db.query("SELECT * FROM evaluations ORDER BY id DESC", (err2, result2) => {
+                    if (err2) return res.status(500).json({ message: "خطأ في قاعدة البيانات", error: err.message });
+                    res.json(result2 || []);
+                });
+                return;
             }
             res.json(result || []);
         }
@@ -335,7 +340,13 @@ app.post("/evaluations", (req, res) => {
     db.query(sql, values, (err, result) => {
         if (err) {
             console.error("Post Evaluation Error:", err);
-            return res.status(500).json({ success: false, message: "فشل الحفظ", error: err.message });
+            // محاولة إدراج بدون الأعمدة الجديدة في حال فشل الإدراج
+            db.query("INSERT INTO evaluations (targetName, avgScore, comment, status) VALUES (?,?,?,?)", 
+            [targetName, avgScore || 0, comment || '', status || 'Pending'], (err2, result2) => {
+                if (err2) return res.status(500).json({ success: false, message: "فشل الحفظ النهائي", error: err.message });
+                res.json({ success: true, id: result2.insertId });
+            });
+            return;
         }
         res.json({ success: true, id: result.insertId });
     });
@@ -349,7 +360,7 @@ app.patch("/evaluations/:id", (req, res) => {
         (err) => {
             if (err) {
                 console.error("Update Evaluation Error:", err);
-                return res.status(500).json({ success: false, message: "فشل التحديث" });
+                return res.status(500).json({ message: "فشل التحديث" });
             }
             res.json({ success: true });
         }
@@ -358,10 +369,7 @@ app.patch("/evaluations/:id", (req, res) => {
 
 app.delete("/evaluations/:id", (req, res) => {
     db.query("DELETE FROM evaluations WHERE id=?", [req.params.id], (err) => {
-        if (err) {
-            console.error("Delete Evaluation Error:", err);
-            return res.status(500).json({ success: false, message: "فشل الحذف" });
-        }
+        if (err) return res.status(500).json({ message: "فشل الحذف" });
         res.json({ success: true });
     });
 });
