@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" data-theme="light" data-lang="ar" dir="rtl">
+<html lang="ar" data-theme="dark" data-lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <!-- Use production version of Vue -->
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
 </head>
 <body class="role-admin" id="body-root">
@@ -15,28 +14,20 @@
   <header class="fimro-header">
     <div class="header-container">
       <div class="header-left">
-        <div class="fimro-logo">
-          <span class="arena-text arena-logo-glow">Arena</span>
-        </div>
+        <div class="fimro-logo"><span class="arena-text arena-logo-glow">Arena</span></div>
       </div>
       <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
         <div class="theme-toggle">
-          <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn">
-            <i class="fa-solid fa-moon"></i>
-          </button>
+          <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn"><i class="fa-solid fa-sun"></i></button>
         </div>
         <div class="header-lang-toggle">
-          <button class="lang-toggle-btn" onclick="toggleLanguage()">
-            <i class="fa-solid fa-globe"></i>
-            <span id="lang-label">AR</span>
-          </button>
+          <button class="lang-toggle-btn" onclick="toggleLanguage()"><i class="fa-solid fa-globe"></i> <span id="lang-label">AR</span></button>
         </div>
       </div>
     </div>
   </header>
 
   <div class="page app-shell" id="app-shell">
-    
     <aside class="fimro-sidebar">
       <a href="javascript:void(0)" class="sidebar-icon role-admin-only" id="sidebar-dashboard" onclick="switchSection('dashboard')" title="Dashboard"><i class="fa-solid fa-house"></i></a>
       <a href="javascript:void(0)" class="sidebar-icon" id="sidebar-evaluations" onclick="switchSection('evaluations')" title="Evaluations"><i class="fa-solid fa-star"></i></a>
@@ -47,12 +38,11 @@
     </aside>
 
     <main class="fimro-main">
-      
       <!-- SECTION: SUBMIT EVAL -->
       <section class="content-section" id="section-submit-eval">
         <div class="multistep-container">
           <div class="card multistep-card">
-            <div class="progress-bar-container" style="margin-bottom:30px; background:rgba(0,0,0,0.05); height:8px; border-radius:10px; overflow:hidden;">
+            <div class="progress-bar-container" style="margin-bottom:30px; background:rgba(255,255,255,0.05); height:8px; border-radius:10px; overflow:hidden;">
               <div class="progress-fill" id="form-progress" style="width: 33.33%; background:var(--primary); height:100%; transition:0.3s;"></div>
             </div>
             <form id="evaluation-form" onsubmit="return false;">
@@ -105,10 +95,7 @@
       <!-- SECTION: DASHBOARD -->
       <section class="content-section" id="section-dashboard">
         <div class="dashboard-wrapper">
-          <div class="hero-content">
-            <h1>لوحة التحكم</h1>
-            <p>مرحباً بك مجدداً في Arena</p>
-          </div>
+          <div class="hero-content"><h1>لوحة التحكم</h1><p>مرحباً بك مجدداً في Arena</p></div>
           <div class="hero-stats">
             <div class="h-stat"><span id="total-evals-count">0</span><label>الإجمالي</label></div>
             <div class="h-stat"><span id="pending-evals-count">0</span><label>المعلقة</label></div>
@@ -118,12 +105,7 @@
           <button class="tab-btn active" onclick="switchAdminTab('pending')">المعلقة</button>
           <button class="tab-btn" onclick="switchAdminTab('completed')">المكتملة</button>
         </div>
-        <div class="card" style="overflow-x:auto">
-          <table class="fimro-table">
-            <thead><tr><th>التاريخ</th><th>الهدف</th><th>النتيجة</th><th>الملاحظة</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-            <tbody id="admin-eval-table-body"></tbody>
-          </table>
-        </div>
+        <div class="card" style="overflow-x:auto"><table class="fimro-table"><thead><tr><th>التاريخ</th><th>الهدف</th><th>النتيجة</th><th>الملاحظة</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="admin-eval-table-body"></tbody></table></div>
       </section>
 
       <!-- SECTION: EVALUATIONS -->
@@ -136,74 +118,76 @@
       <section class="content-section" id="section-users">
         <div class="card">
           <h2 style="margin-bottom:20px;">إدارة المستخدمين</h2>
-          <table class="fimro-table">
-            <thead><tr><th>المستخدم</th><th>الصلاحية</th><th>رؤية النتائج</th><th>إجراء</th></tr></thead>
-            <tbody id="users-table-body"></tbody>
-          </table>
+          <table class="fimro-table"><thead><tr><th>المستخدم</th><th>الصلاحية</th><th>رؤية النتائج</th><th>إجراء</th></tr></thead><tbody id="users-table-body"></tbody></table>
         </div>
       </section>
 
       <!-- SECTION: SETTINGS -->
       <section class="content-section" id="section-settings">
-        <div class="card"><h2>إدارة المنظمة والأسئلة</h2><p>يمكنك إضافة الموظفين والأقسام والأسئلة من هنا.</p></div>
+        <div class="card">
+          <h2 style="margin-bottom:20px;"><i class="fa-solid fa-building-user"></i> إدارة المنظمة</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div>
+              <h3>الموظفون</h3>
+              <div style="display:flex; gap:10px; margin:10px 0;"><input type="text" id="new-employee-name" class="fimro-input" placeholder="اسم الموظف"><button class="btn-fimro-primary" onclick="addEmployee()">إضافة</button></div>
+              <div id="employees-list" style="max-height:200px; overflow-y:auto; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px;"></div>
+            </div>
+            <div>
+              <h3>الأقسام</h3>
+              <div style="display:flex; gap:10px; margin:10px 0;"><input type="text" id="new-department-name" class="fimro-input" placeholder="اسم القسم"><button class="btn-fimro-primary" onclick="addDepartment()">إضافة</button></div>
+              <div id="departments-list" style="max-height:200px; overflow-y:auto; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 style="margin-bottom:20px;"><i class="fa-solid fa-list-check"></i> إدارة الأسئلة</h2>
+          <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="text" id="new-question-ar" class="fimro-input" placeholder="السؤال بالعربي">
+            <input type="text" id="new-question-en" class="fimro-input" placeholder="English Translation">
+            <button class="btn-fimro-primary" onclick="addQuestion()">إضافة</button>
+          </div>
+          <div id="questions-list" style="max-height:300px; overflow-y:auto; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px;"></div>
+        </div>
       </section>
-
     </main>
   </div>
 
-  <!-- MODALS -->
-  <div class="modal-overlay" id="evalModal">
-    <div class="modal-content">
-      <h2 id="modalTarget" style="margin-bottom:15px"></h2>
-      <div id="modalQuestionsRatings" style="margin-bottom:20px"></div>
-      <p id="modalComment" style="background:rgba(0,0,0,0.05); padding:15px; border-radius:12px; margin-bottom:20px"></p>
-      <button class="btn-fimro-primary" style="width:100%" onclick="closeEvalModal()">إغلاق</button>
-    </div>
-  </div>
+  <div class="modal-overlay" id="evalModal"><div class="modal-content"><h2 id="modalTarget" style="margin-bottom:15px"></h2><div id="modalQuestionsRatings" style="margin-bottom:20px"></div><p id="modalComment" style="background:rgba(0,0,0,0.05); padding:15px; border-radius:12px; margin-bottom:20px"></p><button class="btn-fimro-primary" style="width:100%" onclick="closeEvalModal()">إغلاق</button></div></div>
 
   <script>
-    // Configuration
     const API = 'https://arena-server-c8xo.onrender.com';
     let currentUser = JSON.parse(sessionStorage.getItem('arena_user')) || { username: 'Guest', role: 'user' };
     let evaluations = [];
     let currentAdminTab = 'pending';
 
-    // Core Logic
     document.addEventListener('DOMContentLoaded', () => {
-      if (!sessionStorage.getItem('arena_user')) {
-          window.location.href = '../index.html';
-          return;
-      }
+      if (!sessionStorage.getItem('arena_user')) { window.location.href = '../index.html'; return; }
       checkRole();
       loadEvaluations();
       updateEvalTargetUI();
       loadUsers();
+      loadEmployees();
+      loadDepartments();
+      loadQuestions();
       
-      // Default Section
       switchSection(currentUser.role === 'admin' ? 'dashboard' : 'submit-eval');
       
-      // Apply saved theme
-      const savedTheme = localStorage.getItem('arena-theme') || 'light';
+      // Default Dark Mode
+      const savedTheme = localStorage.getItem('arena-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeIcon(savedTheme);
     });
 
-    function checkRole() {
-      const body = document.getElementById('body-root');
-      body.className = currentUser.role === 'admin' ? 'role-admin' : 'role-user';
-    }
-
+    function checkRole() { document.getElementById('body-root').className = currentUser.role === 'admin' ? 'role-admin' : 'role-user'; }
     function switchSection(id) {
       document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
       const target = document.getElementById('section-' + id);
       if (target) target.classList.add('active');
-      
       document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
       const icon = document.getElementById('sidebar-' + id);
       if (icon) icon.classList.add('active');
     }
 
-    // Language & Theme
     function toggleLanguage() {
       const current = document.documentElement.getAttribute('data-lang') || 'ar';
       const next = current === 'ar' ? 'en' : 'ar';
@@ -214,7 +198,7 @@
     }
 
     function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
       const next = current === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('arena-theme', next);
@@ -226,14 +210,13 @@
       if (btn) btn.innerHTML = theme === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
     }
 
-    // Data Management
     async function loadEvaluations() {
       try {
         const res = await fetch(`${API}/evaluations`);
         evaluations = await res.json();
         renderAdminTable();
         renderPublicGrid();
-      } catch(e) { console.error('Load Evaluations Error:', e); }
+      } catch(e) { console.error(e); }
     }
 
     function renderAdminTable() {
@@ -261,56 +244,73 @@
     function renderPublicGrid() {
       const grid = document.getElementById('public-eval-grid');
       if (!grid) return;
-      grid.innerHTML = evaluations.filter(e => e.status === 'Approved').map(ev => `
-        <div class="card" style="margin-bottom:0">
-          <h3>${ev.targetName}</h3>
-          <p>${ev.comment}</p>
-          <div style="margin-top:10px; font-size:12px; opacity:0.6">${ev.avgScore} / 5</div>
+      grid.innerHTML = evaluations.filter(e => e.status === 'Approved').map(ev => `<div class="card" style="margin-bottom:0"><h3>${ev.targetName}</h3><p>${ev.comment}</p><div style="margin-top:10px; font-size:12px; opacity:0.6">${ev.avgScore} / 5</div></div>`).join('');
+    }
+
+    async function loadUsers() {
+      const res = await fetch(`${API}/users`);
+      const data = await res.json();
+      const tbody = document.getElementById('users-table-body');
+      if (tbody) tbody.innerHTML = data.map(u => `<tr><td>${u.username}</td><td><select class="role-select-mini" onchange="updateUserRole(${u.id},this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td><td><select class="role-select-mini" onchange="updateUserAccess(${u.id},this.value)"><option value="0" ${u.canViewResults==0?'selected':''}>Hidden</option><option value="1" ${u.canViewResults==1?'selected':''}>Visible</option></select></td><td><button class="btn-reject" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
+
+    async function updateUserRole(id, role) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) }); }
+    async function updateUserAccess(id, access) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ canViewResults: parseInt(access) }) }); }
+    async function deleteUser(id) { if(confirm('حذف؟')) { await fetch(`${API}/users/${id}`, { method: 'DELETE' }); loadUsers(); } }
+
+    async function loadEmployees() {
+      const res = await fetch(`${API}/employees`);
+      const data = await res.json();
+      document.getElementById('employees-list').innerHTML = data.map(e => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid rgba(255,255,255,0.05)"><span>${e.name}</span><button class="btn-reject" style="padding:2px 8px" onclick="deleteEmployee(${e.id})">حذف</button></div>`).join('');
+    }
+    async function addEmployee() {
+      const name = document.getElementById('new-employee-name').value;
+      if(!name) return;
+      await fetch(`${API}/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      document.getElementById('new-employee-name').value = '';
+      loadEmployees();
+    }
+    async function deleteEmployee(id) { await fetch(`${API}/employees/${id}`, { method: 'DELETE' }); loadEmployees(); }
+
+    async function loadDepartments() {
+      const res = await fetch(`${API}/departments`);
+      const data = await res.json();
+      document.getElementById('departments-list').innerHTML = data.map(d => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid rgba(255,255,255,0.05)"><span>${d.name}</span><button class="btn-reject" style="padding:2px 8px" onclick="deleteDepartment(${d.id})">حذف</button></div>`).join('');
+    }
+    async function addDepartment() {
+      const name = document.getElementById('new-department-name').value;
+      if(!name) return;
+      await fetch(`${API}/departments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      document.getElementById('new-department-name').value = '';
+      loadDepartments();
+    }
+    async function deleteDepartment(id) { await fetch(`${API}/departments/${id}`, { method: 'DELETE' }); loadDepartments(); }
+
+    async function loadQuestions() {
+      const res = await fetch(`${API}/questions`);
+      const data = await res.json();
+      document.getElementById('questions-list').innerHTML = data.map(q => `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05)"><span>${q.questionText} (${q.questionTextEn})</span><button class="btn-reject" onclick="deleteQuestion(${q.id})">حذف</button></div>`).join('');
+      // Update dynamic form questions
+      document.getElementById('dynamic-questions-container').innerHTML = data.map(q => `
+        <div class="form-group" style="margin-bottom:15px">
+          <label>${q.questionText}</label>
+          <div style="display:flex; gap:10px; margin-top:5px;">
+            ${[5,4,3,2,1].map(s => `<label style="cursor:pointer"><input type="radio" name="q-${q.id}" value="${s}"> ${s}</label>`).join('')}
+          </div>
         </div>
       `).join('');
     }
-
-    // Users Management
-    async function loadUsers() {
-      try {
-        const res = await fetch(`${API}/users`);
-        const data = await res.json();
-        const tbody = document.getElementById('users-table-body');
-        if (tbody) tbody.innerHTML = data.map(u => `
-          <tr>
-            <td>${u.username}</td>
-            <td><select class="role-select-mini" onchange="updateUserRole(${u.id},this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
-            <td><select class="role-select-mini" onchange="updateUserAccess(${u.id},this.value)"><option value="0" ${u.canViewResults==0?'selected':''}>Hidden</option><option value="1" ${u.canViewResults==1?'selected':''}>Visible</option></select></td>
-            <td><button class="btn-reject" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button></td>
-          </tr>
-        `).join('');
-      } catch(e) { console.error('Load Users Error:', e); }
+    async function addQuestion() {
+      const ar = document.getElementById('new-question-ar').value;
+      const en = document.getElementById('new-question-en').value;
+      if(!ar || !en) return;
+      await fetch(`${API}/questions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionText: ar, questionTextEn: en }) });
+      document.getElementById('new-question-ar').value = '';
+      document.getElementById('new-question-en').value = '';
+      loadQuestions();
     }
+    async function deleteQuestion(id) { await fetch(`${API}/questions/${id}`, { method: 'DELETE' }); loadQuestions(); }
 
-    async function updateUserRole(id, role) {
-      await fetch(`${API}/users/${id}`, { 
-        method: 'PATCH', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ role }) 
-      });
-    }
-
-    async function updateUserAccess(id, canViewResults) {
-      await fetch(`${API}/users/${id}`, { 
-        method: 'PATCH', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ canViewResults: parseInt(canViewResults) }) 
-      });
-    }
-
-    async function deleteUser(id) {
-      if(confirm('حذف هذا المستخدم؟')) {
-        await fetch(`${API}/users/${id}`, { method: 'DELETE' });
-        loadUsers();
-      }
-    }
-
-    // Utils
     function logout() { sessionStorage.clear(); window.location.href = '../index.html'; }
     function showEvalModal(idx) {
       const ev = evaluations[idx];
@@ -321,7 +321,7 @@
     function closeEvalModal() { document.getElementById('evalModal').classList.remove('show'); }
     function switchAdminTab(t) {
       currentAdminTab = t;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t.toLowerCase())));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(t==='pending'?'المعلقة':'المكتملة')));
       renderAdminTable();
     }
     function nextStep(s) {
@@ -336,7 +336,28 @@
       document.getElementById('target-dropdown').innerHTML = '<option value="">اختر...</option>' + data.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
     }
 
-    // Vue Instance for Bear Animation
+    async function updateStatus(id, status) { await fetch(`${API}/evaluations/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); loadEvaluations(); }
+    async function deleteEvaluation(id) { if(confirm('حذف؟')) { await fetch(`${API}/evaluations/${id}`, { method: 'DELETE' }); loadEvaluations(); } }
+
+    async function submitEvaluation() {
+      const target = document.getElementById('target-dropdown').value;
+      const comment = document.getElementById('eval-comment').value;
+      if(!target || !comment) { alert('يرجى ملء كافة البيانات'); return; }
+      
+      const res = await fetch(`${API}/evaluations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetName: target,
+          comment: comment,
+          avgScore: 4, // Simplified for now
+          submittedBy: currentUser.username,
+          status: 'Pending'
+        })
+      });
+      if(res.ok) { alert('تم إرسال التقييم بنجاح'); location.reload(); }
+    }
+
     new Vue({
       el: '#step-3',
       data: { commentText: '' },
