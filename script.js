@@ -1,7 +1,12 @@
 // متغيرات عامة لتتبع الماوس
 let mouseX = 0, mouseY = 0;
 
-// نظام LocalStorage للمستخدمين
+// إعداد عنوان السيرفر (تأكد من مطابقة هذا للعنوان الفعلي في Render أو localhost)
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+    ? 'http://localhost:3000' 
+    : 'https://arena-server-c8xo.onrender.com'; // تم استخدام نفس رابط السيرفر الموجود في لوحة التحكم
+
+// نظام LocalStorage للمستخدمين (للتوافقية وللمستخدمين القدامى)
 const StorageManager = {
   getUsers() {
     return JSON.parse(localStorage.getItem('arena_users') || '[]');
@@ -101,24 +106,49 @@ window.APP = new Vue({
         }
 
         try {
-            const result = StorageManager.authenticate(this.username, password);
+            // 1. محاولة تسجيل الدخول عبر السيرفر أولاً
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: this.username, password: password })
+                });
+                
+                if (response.ok) {
+                    const serverResult = await response.json();
+                    if (serverResult.success) {
+                        this.loginSuccess(serverResult.user);
+                        return;
+                    }
+                }
+            } catch (serverErr) {
+                console.warn("Server login failed or unreachable, trying local storage...", serverErr);
+            }
 
-            if (result.success) {
-                showSuccess(this.username);
-                setTimeout(() => {
-                    sessionStorage.setItem("arena_user", JSON.stringify(result.user));
-                    window.location.href = "dashboard/index.html";
-                }, 2200);
+            // 2. إذا فشل السيرفر أو لم يكن متاحاً، جرب LocalStorage
+            const localResult = StorageManager.authenticate(this.username, password);
 
+            if (localResult.success) {
+                this.loginSuccess(localResult.user);
             } else {
                 showError("اسم المستخدم أو كلمة المرور غير صحيحة");
                 this.resetBtn(btn);
             }
 
         } catch (err) {
+            console.error("Login process error:", err);
             alert("حدث خطأ في النظام.");
             this.resetBtn(btn);
         }
+    },
+    loginSuccess(user) {
+        showSuccess(this.username);
+        // ملاحظة: لوحة التحكم تقوم بحذف arena_user من sessionStorage فور قراءته،
+        // لذا نضعه هنا لكي يتم استهلاكه هناك.
+        sessionStorage.setItem("arena_user", JSON.stringify(user));
+        setTimeout(() => {
+            window.location.href = "dashboard/index.html";
+        }, 2200);
     },
     resetBtn(btn) {
         if (btn) {
@@ -168,6 +198,7 @@ async function handleRegister() {
     const password = document.getElementById('reg-password').value.trim();
     const code = document.getElementById('reg-code').value.trim();
     const msg = document.getElementById('reg-msg');
+    const btn = document.querySelector("#registerModal .login-btn");
 
     if (!username || !password || !code) {
         msg.innerText = "⚠️ يرجى ملء جميع الحقول";
@@ -183,18 +214,54 @@ async function handleRegister() {
         return;
     }
 
-    const result = StorageManager.addUser(username, password);
-    if (result.success) {
-        msg.innerText = "✅ تم إنشاء الحساب وتوثيقه بنجاح!";
-        msg.style.color = "#10b981";
-        setTimeout(() => {
-            closeRegisterModal();
-            window.APP.username = username;
-            document.getElementById('password').value = password;
-        }, 1500);
-    } else {
-        msg.innerText = "❌ " + result.message;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "جاري الإنشاء...";
+    }
+
+    try {
+        // 1. محاولة الإنشاء في السيرفر أولاً
+        let serverSuccess = false;
+        try {
+            const response = await fetch(`${API_BASE_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const serverResult = await response.json();
+            if (serverResult.success) {
+                serverSuccess = true;
+            } else if (serverResult.message === "اسم المستخدم موجود مسبقاً") {
+                msg.innerText = "❌ اسم المستخدم موجود مسبقاً في السيرفر";
+                msg.style.color = "#ef4444";
+                if (btn) { btn.disabled = false; btn.innerText = "توثيق وإنشاء الحساب"; }
+                return;
+            }
+        } catch (serverErr) {
+            console.warn("Server registration failed, falling back to local...", serverErr);
+        }
+
+        // 2. الإنشاء في LocalStorage أيضاً لضمان الدخول الفوري
+        const localResult = StorageManager.addUser(username, password);
+        
+        if (localResult.success || serverSuccess) {
+            msg.innerText = "✅ تم إنشاء الحساب وتوثيقه بنجاح!";
+            msg.style.color = "#10b981";
+            setTimeout(() => {
+                closeRegisterModal();
+                window.APP.username = username;
+                document.getElementById('password').value = password;
+                if (btn) { btn.disabled = false; btn.innerText = "توثيق وإنشاء الحساب"; }
+            }, 1500);
+        } else {
+            msg.innerText = "❌ " + localResult.message;
+            msg.style.color = "#ef4444";
+            if (btn) { btn.disabled = false; btn.innerText = "توثيق وإنشاء الحساب"; }
+        }
+    } catch (err) {
+        msg.innerText = "❌ حدث خطأ غير متوقع";
         msg.style.color = "#ef4444";
+        if (btn) { btn.disabled = false; btn.innerText = "توثيق وإنشاء الحساب"; }
     }
 }
 
