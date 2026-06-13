@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <!-- Use production version of Vue -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
 </head>
 <body class="role-admin" id="body-root">
 
@@ -55,7 +56,6 @@
               <div class="progress-fill" id="form-progress" style="width: 33.33%; background:var(--primary); height:100%; transition:0.3s;"></div>
             </div>
             <form id="evaluation-form" onsubmit="return false;">
-              <!-- STEP 1 -->
               <div class="form-step active" id="step-1">
                 <h2 style="margin-bottom:20px;">من تريد أن تقيم؟</h2>
                 <div class="eval-options-grid-fimro">
@@ -71,7 +71,6 @@
                 <select class="fimro-select" id="target-dropdown" style="margin-bottom:20px;"><option value="">اختر...</option></select>
                 <button type="button" class="btn-fimro-primary" style="width:100%" onclick="nextStep(2)">التالي</button>
               </div>
-              <!-- STEP 2 -->
               <div class="form-step" id="step-2">
                 <h2 style="margin-bottom:20px;">الجودة والأداء</h2>
                 <div id="dynamic-questions-container"></div>
@@ -80,7 +79,6 @@
                   <button type="button" class="btn-fimro-primary" style="flex:2" onclick="nextStep(3)">التالي</button>
                 </div>
               </div>
-              <!-- STEP 3 -->
               <div class="form-step" id="step-3">
                 <div id="bear">
                   <div id="head">
@@ -164,20 +162,30 @@
   </div>
 
   <script>
+    // Configuration
     const API = 'https://arena-server-c8xo.onrender.com';
     let currentUser = JSON.parse(sessionStorage.getItem('arena_user')) || { username: 'Guest', role: 'user' };
     let evaluations = [];
     let currentAdminTab = 'pending';
 
+    // Core Logic
     document.addEventListener('DOMContentLoaded', () => {
-      if (!sessionStorage.getItem('arena_user')) window.location.href = '../index.html';
+      if (!sessionStorage.getItem('arena_user')) {
+          window.location.href = '../index.html';
+          return;
+      }
       checkRole();
       loadEvaluations();
       updateEvalTargetUI();
       loadUsers();
       
-      // Auto-switch based on role
+      // Default Section
       switchSection(currentUser.role === 'admin' ? 'dashboard' : 'submit-eval');
+      
+      // Apply saved theme
+      const savedTheme = localStorage.getItem('arena-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
     });
 
     function checkRole() {
@@ -187,19 +195,45 @@
 
     function switchSection(id) {
       document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-      document.getElementById('section-' + id).classList.add('active');
+      const target = document.getElementById('section-' + id);
+      if (target) target.classList.add('active');
+      
       document.querySelectorAll('.sidebar-icon').forEach(i => i.classList.remove('active'));
       const icon = document.getElementById('sidebar-' + id);
       if (icon) icon.classList.add('active');
     }
 
+    // Language & Theme
+    function toggleLanguage() {
+      const current = document.documentElement.getAttribute('data-lang') || 'ar';
+      const next = current === 'ar' ? 'en' : 'ar';
+      document.documentElement.setAttribute('data-lang', next);
+      document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
+      document.getElementById('lang-label').textContent = next.toUpperCase();
+      localStorage.setItem('arena-lang', next);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('arena-theme', next);
+      updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) btn.innerHTML = theme === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+    }
+
+    // Data Management
     async function loadEvaluations() {
       try {
         const res = await fetch(`${API}/evaluations`);
         evaluations = await res.json();
         renderAdminTable();
         renderPublicGrid();
-      } catch(e) { console.error(e); }
+      } catch(e) { console.error('Load Evaluations Error:', e); }
     }
 
     function renderAdminTable() {
@@ -236,6 +270,48 @@
       `).join('');
     }
 
+    // Users Management
+    async function loadUsers() {
+      try {
+        const res = await fetch(`${API}/users`);
+        const data = await res.json();
+        const tbody = document.getElementById('users-table-body');
+        if (tbody) tbody.innerHTML = data.map(u => `
+          <tr>
+            <td>${u.username}</td>
+            <td><select class="role-select-mini" onchange="updateUserRole(${u.id},this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
+            <td><select class="role-select-mini" onchange="updateUserAccess(${u.id},this.value)"><option value="0" ${u.canViewResults==0?'selected':''}>Hidden</option><option value="1" ${u.canViewResults==1?'selected':''}>Visible</option></select></td>
+            <td><button class="btn-reject" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button></td>
+          </tr>
+        `).join('');
+      } catch(e) { console.error('Load Users Error:', e); }
+    }
+
+    async function updateUserRole(id, role) {
+      await fetch(`${API}/users/${id}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ role }) 
+      });
+    }
+
+    async function updateUserAccess(id, canViewResults) {
+      await fetch(`${API}/users/${id}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ canViewResults: parseInt(canViewResults) }) 
+      });
+    }
+
+    async function deleteUser(id) {
+      if(confirm('حذف هذا المستخدم؟')) {
+        await fetch(`${API}/users/${id}`, { method: 'DELETE' });
+        loadUsers();
+      }
+    }
+
+    // Utils
+    function logout() { sessionStorage.clear(); window.location.href = '../index.html'; }
     function showEvalModal(idx) {
       const ev = evaluations[idx];
       document.getElementById('modalTarget').textContent = ev.targetName;
@@ -243,25 +319,16 @@
       document.getElementById('evalModal').classList.add('show');
     }
     function closeEvalModal() { document.getElementById('evalModal').classList.remove('show'); }
-
-    async function updateStatus(id, status) {
-      await fetch(`${API}/evaluations/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-      loadEvaluations();
+    function switchAdminTab(t) {
+      currentAdminTab = t;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t.toLowerCase())));
+      renderAdminTable();
     }
-
-    async function deleteEvaluation(id) {
-      if (confirm('حذف نهائي؟')) {
-        await fetch(`${API}/evaluations/${id}`, { method: 'DELETE' });
-        loadEvaluations();
-      }
-    }
-
     function nextStep(s) {
       document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
       document.getElementById('step-' + s).classList.add('active');
       document.getElementById('form-progress').style.width = (s * 33.33) + '%';
     }
-
     async function updateEvalTargetUI() {
       const type = document.querySelector('input[name="eval-target"]:checked').value;
       const res = await fetch(`${API}/${type === 'employee' ? 'employees' : 'departments'}`);
@@ -269,31 +336,7 @@
       document.getElementById('target-dropdown').innerHTML = '<option value="">اختر...</option>' + data.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
     }
 
-    async function loadUsers() {
-      const res = await fetch(`${API}/users`);
-      const data = await res.json();
-      const tbody = document.getElementById('users-table-body');
-      if (tbody) tbody.innerHTML = data.map(u => `
-        <tr>
-          <td>${u.username}</td>
-          <td><select class="role-select-mini" onchange="updateUserRole(${u.id},this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
-          <td><select class="role-select-mini" onchange="updateUserAccess(${u.id},this.value)"><option value="0" ${u.canViewResults==0?'selected':''}>Hidden</option><option value="1" ${u.canViewResults==1?'selected':''}>Visible</option></select></td>
-          <td><button class="btn-reject" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button></td>
-        </tr>
-      `).join('');
-    }
-
-    async function updateUserRole(id, role) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) }); }
-    async function updateUserAccess(id, canViewResults) { await fetch(`${API}/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ canViewResults }) }); }
-    async function deleteUser(id) { if(confirm('حذف؟')) { await fetch(`${API}/users/${id}`, { method: 'DELETE' }); loadUsers(); } }
-
-    function logout() { sessionStorage.clear(); window.location.href = '../index.html'; }
-    function toggleTheme() {
-      const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('arena-theme', theme);
-    }
-
+    // Vue Instance for Bear Animation
     new Vue({
       el: '#step-3',
       data: { commentText: '' },
