@@ -20,9 +20,23 @@
    - `JWT_SECRET` (قم بتوليد مفتاح عشوائي طويل)
    - `NODE_ENV` اضبطها على `production`
 
-## الخطوة 3: النشر
+## الخطوة 3: النشر على Vercel
 - بمجرد دفع الكود (Push) إلى GitHub، سيقوم Vercel ببناء ونشر التطبيق تلقائياً.
+
+## الخطوة 4: النشر على Render
+1. أنشئ **Web Service** جديد واربطه بمستودع GitHub.
+2. اختر الإعدادات التالية:
+   - **Runtime**: `Node`
+   - **Build Command**: `pnpm install; pnpm run build`
+   - **Start Command**: `pnpm run start`
+3. أضف متغيرات البيئة (Environment Variables):
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `JWT_SECRET`
+   - `NODE_ENV`: `production`
+   - `RENDER`: `true` (مهم جداً لتشغيل السيرفر)
 
 ## ملاحظات هامة
 - تأكد من تثبيت التبعيات باستخدام `pnpm install`.
-- الواجهة الخلفية تعمل كـ **Vercel Functions** من خلال مجلد `server`.
+- الواجهة الخلفية تعمل كـ **Vercel Functions** من خلال مجلد `api`.

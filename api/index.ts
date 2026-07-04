@@ -457,19 +457,20 @@ app.get("/api/analytics", authenticateToken, authorizeRole(["admin"]), async (_r
   }
 });
 
-// Serve static files from the React app
-// API only on Vercel, static files handled by framework
-if (process.env.NODE_ENV !== "production") {
-  app.use(express.static(path.join(__dirname, "../dist")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../dist/index.html"));
-  });
-}
+// Serve static files from the React app (dist folder)
+app.use(express.static(path.join(__dirname, ".")));
+
+// Catch-all route for SPA
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 export default app;
 
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
+// For Render and local development
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== "production" || process.env.RENDER) {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
