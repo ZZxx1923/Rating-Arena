@@ -458,11 +458,11 @@ app.get("/api/analytics", authenticateToken, authorizeRole(["admin"]), async (_r
 });
 
 // Serve static files from the React app
-// Static files are handled by Vercel rewrites in production
+// API only on Vercel, static files handled by framework
 if (process.env.NODE_ENV !== "production") {
-  app.use(express.static(path.join(__dirname, "../dist/public")));
+  app.use(express.static(path.join(__dirname, "../dist")));
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../dist/public/index.html"));
+    res.sendFile(path.join(__dirname, "../dist/index.html"));
   });
 }
 
