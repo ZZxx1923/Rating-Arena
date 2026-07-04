@@ -3,18 +3,19 @@
  * Design: Arctic Glass (Corporate Glassmorphism)
  * Admin: full stats | User: limited view (No charts)
  */
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getStats, getEvaluations, getEmployees, getDepartments,
-  type Evaluation
-} from "@/lib/store";
+  apiGetUsers, apiGetEvaluations, apiGetEmployees, apiGetDepartments, apiGetAnalytics,
+  ApiEvaluation, ApiEmployee, ApiDepartment, ApiUser
+} from "@/lib/api";
 import {
   Users, Building2, UserCheck, ClipboardList, Clock, CheckCircle,
   XCircle, Star, PlusCircle, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const COLORS = {
   indigo: "oklch(0.60 0.22 264)",
@@ -75,23 +76,51 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth();
-  const stats = useMemo(() => getStats(), []);
-  const evaluations = useMemo(() => getEvaluations(), []);
-  const employees = useMemo(() => getEmployees(), []);
-  const departments = useMemo(() => getDepartments(), []);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [evaluations, setEvaluations] = useState<ApiEvaluation[]>([]);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [fetchedUsers, fetchedEvaluations, fetchedEmployees, fetchedDepartments, fetchedAnalytics] = await Promise.all([
+          isAdmin ? apiGetUsers() : Promise.resolve([]), // Only fetch users if admin
+          apiGetEvaluations(),
+          apiGetEmployees(),
+          apiGetDepartments(),
+          isAdmin ? apiGetAnalytics() : Promise.resolve(null), // Only fetch analytics if admin
+        ]);
+        setUsers(fetchedUsers);
+        setEvaluations(fetchedEvaluations);
+        setEmployees(fetchedEmployees);
+        setDepartments(fetchedDepartments);
+        setAnalytics(fetchedAnalytics);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        toast.error("Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [isAdmin]);
 
   // Recent evaluations
   const recentEvals = useMemo(() =>
     [...evaluations]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5),
     [evaluations]
   );
 
   // My evaluations (for regular users)
   const myEvals = useMemo(() =>
-    evaluations.filter(e => e.userId === user?.id)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    evaluations.filter(e => e.user_id === user?.id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5),
     [evaluations, user]
   );
@@ -99,9 +128,13 @@ export default function Dashboard() {
   const getEmployeeName = (id: string) => employees.find(e => e.id === id)?.name || "Unknown";
   const getDeptName = (empId: string) => {
     const emp = employees.find(e => e.id === empId);
-    if (!emp) return "-";
+    if (!emp || !emp.departmentId) return "-";
     return departments.find(d => d.id === emp.departmentId)?.name || "-";
   };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading dashboard...</div>; // Simple loading state
+  }
 
   return (
     <div className="space-y-6">
@@ -135,20 +168,20 @@ export default function Dashboard() {
       {/* Stats Grid */}
       {isAdmin ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-          <StatCard icon={<Users className="w-5 h-5" />} label="Total Users" value={stats.totalUsers} color={COLORS.indigo} />
-          <StatCard icon={<UserCheck className="w-5 h-5" />} label="Employees" value={stats.totalEmployees} color={COLORS.violet} />
-          <StatCard icon={<Building2 className="w-5 h-5" />} label="Departments" value={stats.totalDepartments} color={COLORS.emerald} />
-          <StatCard icon={<Star className="w-5 h-5" />} label="Avg Rating" value={stats.avgRating || "—"} color={COLORS.amber} sub="Across approved evaluations" />
-          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending" value={stats.pending} color={COLORS.amber} sub="Awaiting review" />
-          <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Approved" value={stats.approved} color={COLORS.emerald} sub="Verified evaluations" />
-          <StatCard icon={<XCircle className="w-5 h-5" />} label="Rejected" value={stats.rejected} color={COLORS.rose} sub="Declined evaluations" />
-          <StatCard icon={<ClipboardList className="w-5 h-5" />} label="Total Evaluations" value={stats.totalEvaluations} color={COLORS.indigo} sub="All time" />
+          <StatCard icon={<Users className="w-5 h-5" />} label="Total Users" value={users.length} color={COLORS.indigo} />
+          <StatCard icon={<UserCheck className="w-5 h-5" />} label="Employees" value={employees.length} color={COLORS.violet} />
+          <StatCard icon={<Building2 className="w-5 h-5" />} label="Departments" value={departments.length} color={COLORS.emerald} />
+          <StatCard icon={<Star className="w-5 h-5" />} label="Avg Rating" value={analytics?.averageScores?.[0]?.average_score?.toFixed(1) || "—"} color={COLORS.amber} sub="Across approved evaluations" />
+          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending" value={analytics?.statusCounts?.find((s: any) => s.status === "pending")?.count || 0} color={COLORS.amber} sub="Awaiting review" />
+          <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Approved" value={analytics?.statusCounts?.find((s: any) => s.status === "approved")?.count || 0} color={COLORS.emerald} sub="Verified evaluations" />
+          <StatCard icon={<XCircle className="w-5 h-5" />} label="Rejected" value={analytics?.statusCounts?.find((s: any) => s.status === "rejected")?.count || 0} color={COLORS.rose} sub="Declined evaluations" />
+          <StatCard icon={<ClipboardList className="w-5 h-5" />} label="Total Evaluations" value={evaluations.length} color={COLORS.indigo} sub="All time" />
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-          <StatCard icon={<ClipboardList className="w-5 h-5" />} label="My Evaluations" value={evaluations.filter(e => e.userId === user?.id).length} color={COLORS.indigo} />
-          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending" value={evaluations.filter(e => e.userId === user?.id && e.status === "pending").length} color={COLORS.amber} />
-          <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Approved" value={evaluations.filter(e => e.userId === user?.id && e.status === "approved").length} color={COLORS.emerald} />
+          <StatCard icon={<ClipboardList className="w-5 h-5" />} label="My Evaluations" value={myEvals.length} color={COLORS.indigo} />
+          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending" value={myEvals.filter(e => e.status === "pending").length} color={COLORS.amber} />
+          <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Approved" value={myEvals.filter(e => e.status === "approved").length} color={COLORS.emerald} />
           <StatCard icon={<UserCheck className="w-5 h-5" />} label="Employees" value={employees.length} color={COLORS.violet} sub="Available to evaluate" />
         </div>
       )}
@@ -192,12 +225,12 @@ export default function Dashboard() {
                   >
                     <td className="px-5 py-3.5">
                       <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                        {getEmployeeName(ev.employeeId)}
+                        {getEmployeeName(ev.employee_id)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                        {getDeptName(ev.employeeId)}
+                        {getDeptName(ev.employee_id)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
@@ -213,7 +246,7 @@ export default function Dashboard() {
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>
-                        {new Date(ev.createdAt).toLocaleDateString()}
+                        {new Date(ev.created_at).toLocaleDateString()}
                       </span>
                     </td>
                   </tr>

@@ -3,12 +3,11 @@
  * Design: Arctic Glass (Corporate Glassmorphism)
  * Admin only: Detailed analytics and performance insights (No charts)
  */
-import { useMemo } from "react";
-import {
-  getEvaluations, getEmployees, getDepartments, getEmployeeStats,
-  EVALUATION_QUESTIONS
-} from "@/lib/store";
+import { useState, useEffect, useMemo } from "react";
+import { apiGetEvaluations, apiGetEmployees, apiGetDepartments, apiGetAnalytics, ApiEvaluation, ApiEmployee, ApiDepartment } from "@/lib/api";
+import { EVALUATION_QUESTIONS } from "@/lib/store"; // Keep constants
 import { TrendingUp, Award, Star, BarChart2 } from "lucide-react";
+import { toast } from "sonner";
 
 const COLORS = {
   indigo: "oklch(0.60 0.22 264)",
@@ -19,30 +18,68 @@ const COLORS = {
 };
 
 export default function Analytics() {
-  const evaluations = useMemo(() => getEvaluations(), []);
-  const employees = useMemo(() => getEmployees(), []);
-  const departments = useMemo(() => getDepartments(), []);
+  const [evaluations, setEvaluations] = useState<ApiEvaluation[]>([]);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const approvedEvals = evaluations.filter(e => e.status === "approved");
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [fetchedEvaluations, fetchedEmployees, fetchedDepartments, fetchedAnalytics] = await Promise.all([
+          apiGetEvaluations(),
+          apiGetEmployees(),
+          apiGetDepartments(),
+          apiGetAnalytics(),
+        ]);
+        setEvaluations(fetchedEvaluations);
+        setEmployees(fetchedEmployees);
+        setDepartments(fetchedDepartments);
+        setAnalytics(fetchedAnalytics);
+      } catch (error) {
+        console.error("Failed to fetch analytics data:", error);
+        toast.error("Failed to load analytics data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const approvedEvals = useMemo(() => evaluations.filter(e => e.status === "approved"), [evaluations]);
+
+  // Helper to get employee stats (moved from store)
+  const getEmployeeStats = useCallback((employeeId: string) => {
+    const employeeEvaluations = approvedEvals.filter(ev => ev.employee_id === employeeId);
+    const totalEvaluations = employeeEvaluations.length;
+    let avgRating = 0;
+    if (totalEvaluations > 0) {
+      const allRatings = employeeEvaluations.flatMap(ev => Object.values(ev.ratings));
+      avgRating = allRatings.reduce((sum, score) => sum + score, 0) / allRatings.length;
+    }
+    return { totalEvaluations, avgRating };
+  }, [approvedEvals]);
 
   // Top performers
   const topPerformers = useMemo(() => {
     return employees
       .map(emp => {
         const stats = getEmployeeStats(emp.id);
-        const dept = departments.find(d => d.id === emp.departmentId);
+        const dept = departments.find(d => d.id === emp.department_id);
         return { ...emp, ...stats, deptName: dept?.name || "—" };
       })
       .filter(e => e.totalEvaluations > 0)
       .sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0))
       .slice(0, 10);
-  }, [employees, departments, evaluations]);
+  }, [employees, departments, getEmployeeStats]);
 
   // Department performance
   const deptPerformance = useMemo(() => {
     return departments.map(dept => {
-      const deptEmps = employees.filter(e => e.departmentId === dept.id);
-      const deptEvals = approvedEvals.filter(ev => deptEmps.some(e => e.id === ev.employeeId));
+      const deptEmps = employees.filter(e => e.department_id === dept.id);
+      const deptEvals = approvedEvals.filter(ev => deptEmps.some(e => e.id === ev.employee_id));
       const avgRating = deptEvals.length > 0
         ? deptEvals.flatMap(ev => Object.values(ev.ratings)).reduce((a, b) => a + b, 0) /
           deptEvals.flatMap(ev => Object.values(ev.ratings)).length
@@ -61,7 +98,7 @@ export default function Analytics() {
     return EVALUATION_QUESTIONS.map(q => {
       const scores = approvedEvals
         .map(ev => ev.ratings[q.id])
-        .filter(Boolean);
+        .filter(score => score !== undefined && score !== null);
       const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
       return {
         question: q.label,
@@ -70,6 +107,10 @@ export default function Analytics() {
       };
     }).sort((a, b) => (b.avgScore || 0) - (a.avgScore || 0));
   }, [approvedEvals]);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading analytics...</div>; // Simple loading state
+  }
 
   return (
     <div className="space-y-6">

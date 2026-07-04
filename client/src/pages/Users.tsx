@@ -3,12 +3,11 @@
  * Design: Arctic Glass (Corporate Glassmorphism)
  * Admin only: Full user management
  */
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getUsers, addUser, updateUser, deleteUser, type User, type Role
-} from "@/lib/store";
-import * as api from "@/lib/api";
+  apiGetUsers, apiRegisterUser, apiUpdateUser, apiDeleteUser, ApiUser, ApiRole
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,22 +21,43 @@ function UserModal({
 }: {
   open: boolean;
   onClose: () => void;
-  user: User | null;
-  onSave: (data: { username: string; password: string; role: Role }) => void;
+  user: ApiUser | null;
+  onSave: (data: { username: string; password?: string; role: ApiRole }) => Promise<void>;
 }) {
   const [username, setUsername] = useState(user?.username || "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>(user?.role || "user");
+  const [role, setRole] = useState<ApiRole>(user?.role || "user");
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username);
+      setRole(user.role);
+      setPassword(""); // Clear password field when editing existing user
+    } else {
+      setUsername("");
+      setRole("user");
+      setPassword("");
+    }
+  }, [user, open]);
+
+  const handleSave = async () => {
     if (!username.trim()) { toast.error("Username is required"); return; }
     if (!user && !password.trim()) { toast.error("Password is required for new users"); return; }
-    onSave({ username: username.trim(), password: password || user?.password || "", role });
+    setLoading(true);
+    try {
+      await onSave({ username: username.trim(), password: password.trim() || undefined, role });
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save user.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent style={{ background: "oklch(0.16 0.018 264)", border: "1px solid oklch(1 0 0 / 0.12)" }}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle style={{ fontFamily: "'Sora', sans-serif", color: "var(--foreground)" }}>
             {user ? "Edit User" : "Create New User"}
@@ -61,7 +81,7 @@ function UserModal({
           </div>
           <div>
             <Label className="text-sm mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>Role *</Label>
-            <Select value={role} onValueChange={v => setRole(v as Role)}>
+            <Select value={role} onValueChange={v => setRole(v as ApiRole)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -72,13 +92,14 @@ function UserModal({
             </Select>
           </div>
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+            <Button variant="outline" onClick={onClose} className="flex-1" disabled={loading}>Cancel</Button>
             <Button
               onClick={handleSave}
               className="flex-1 text-white"
               style={{ background: "linear-gradient(135deg, oklch(0.60 0.22 264), oklch(0.55 0.20 280))", border: "none" }}
+              disabled={loading}
             >
-              {user ? "Save Changes" : "Create User"}
+              {loading ? "Saving..." : (user ? "Save Changes" : "Create User")}
             </Button>
           </div>
         </div>
@@ -89,30 +110,30 @@ function UserModal({
 
 export default function Users() {
   const { user: currentUser, refreshUser } = useAuth();
-  const [users, setUsers] = useState(() => getUsers());
-  const [apiUsers, setApiUsers] = useState<api.ApiUser[]>([]);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | ApiRole>("all");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<ApiUser | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Load users from external API on mount
-  useEffect(() => {
-    const loadApiUsers = async () => {
-      setLoading(true);
-      try {
-        const externalUsers = await api.apiGetUsers();
-        setApiUsers(externalUsers);
-      } catch (error) {
-        console.error("Failed to load API users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadApiUsers();
+  const fetchUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const fetchedUsers = await apiGetUsers();
+      setUsers(fetchedUsers);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast.error("Failed to load users.");
+    } finally {
+      setLoadingUsers(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const filtered = useMemo(() => {
     return users.filter(u => {
@@ -122,77 +143,60 @@ export default function Users() {
     });
   }, [users, search, roleFilter]);
 
-  const handleSave = async (data: { username: string; password: string; role: Role }) => {
-    // Check username uniqueness
-    const existing = users.find(u => u.username === data.username && u.id !== editUser?.id);
-    if (existing) { toast.error("Username already taken"); return; }
-
+  const handleSave = async (data: { username: string; password?: string; role: ApiRole }) => {
     try {
       if (editUser) {
-        const updates: Partial<User> = { username: data.username, role: data.role };
-        if (data.password !== editUser.password) updates.password = data.password;
-        updateUser(editUser.id, updates);
-        
-        // Update in API if exists
-        const apiUser = apiUsers.find(u => u.username === editUser.username);
-        if (apiUser) {
-          await api.apiUpdateUser(apiUser.id, { role: data.role });
-          const updated = await api.apiGetUsers();
-          setApiUsers(updated);
-        }
-        toast.success("User updated (local + API)");
+        // Update existing user
+        await apiUpdateUser(editUser.id, { username: data.username, password: data.password, role: data.role });
+        toast.success("User updated successfully.");
       } else {
-        addUser(data);
-        // Also add to API
-        await api.apiCreateUser(data.username, data.password, data.role);
-        const updated = await api.apiGetUsers();
-        setApiUsers(updated);
-        toast.success("User created (local + API)");
+        // Create new user
+        if (!data.password) { toast.error("Password is required for new users."); return; }
+        await apiRegisterUser(data.username, data.password, data.role);
+        toast.success("User created successfully.");
       }
-      setUsers(getUsers());
-      refreshUser();
+      fetchUsers(); // Refresh the user list
+      refreshUser(); // Refresh current user context in case own role changed
       setModalOpen(false);
       setEditUser(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving user:", error);
-      toast.error("Failed to sync with API");
+      throw error; // Re-throw to be caught by UserModal
     }
   };
 
   const handleDelete = async (id: string) => {
     if (id === currentUser?.id) { toast.error("You cannot delete your own account"); setDeleteConfirm(null); return; }
     try {
-      const userToDelete = users.find(u => u.id === id);
-      deleteUser(id);
-      
-      // Delete from API if exists
-      const apiUser = apiUsers.find(u => u.username === userToDelete?.username);
-      if (apiUser) {
-        await api.apiDeleteUser(apiUser.id);
-        const updated = await api.apiGetUsers();
-        setApiUsers(updated);
-      }
-      
-      setUsers(getUsers());
+      await apiDeleteUser(id);
+      toast.success("User deleted successfully.");
+      fetchUsers(); // Refresh the user list
       setDeleteConfirm(null);
-      toast.success("User deleted (local + API)");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error("Failed to delete from API");
+      toast.error("Failed to delete user.");
     }
   };
 
-  const handleToggleRole = (u: User) => {
+  const handleToggleRole = async (u: ApiUser) => {
     if (u.id === currentUser?.id) { toast.error("You cannot change your own role"); return; }
-    const newRole: Role = u.role === "admin" ? "user" : "admin";
-    updateUser(u.id, { role: newRole });
-    setUsers(getUsers());
-    refreshUser();
-    toast.success(`${u.username} is now ${newRole === "admin" ? "an Administrator" : "a Regular User"}`);
+    const newRole: ApiRole = u.role === "admin" ? "user" : "admin";
+    try {
+      await apiUpdateUser(u.id, { role: newRole });
+      toast.success(`${u.username} is now ${newRole === "admin" ? "an Administrator" : "a Regular User"}`);
+      fetchUsers(); // Refresh the user list
+    } catch (error) {
+      console.error("Error toggling user role:", error);
+      toast.error("Failed to update user role.");
+    }
   };
 
   const adminCount = users.filter(u => u.role === "admin").length;
   const userCount = users.filter(u => u.role === "user").length;
+
+  if (loadingUsers) {
+    return <div className="text-center py-8">Loading users...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -221,7 +225,7 @@ export default function Users() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
           <Input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={roleFilter} onValueChange={v => setRoleFilter(v as any)}>
+        <Select value={roleFilter} onValueChange={v => setRoleFilter(v as "all" | ApiRole)}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
@@ -238,11 +242,10 @@ export default function Users() {
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              {["User", "Role", "Created", "Actions"].map(h => (
-                <th key={h} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>
-                  {h}
-                </th>
-              ))}
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>User</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Role</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Created</th>
+              <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -294,11 +297,11 @@ export default function Users() {
                 </td>
                 <td className="px-5 py-4">
                   <span className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>
-                    {new Date(u.createdAt).toLocaleDateString()}
+                    {new Date(u.created_at).toLocaleDateString()}
                   </span>
                 </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
+                <td className="px-5 py-4 text-right">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => { setEditUser(u); setModalOpen(true); }}
                       className="p-1.5 rounded-lg transition-colors"
@@ -349,18 +352,26 @@ export default function Users() {
       )}
 
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "oklch(0 0 0 / 0.7)", backdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "oklch(0.16 0.018 264)", border: "1px solid oklch(1 0 0 / 0.12)" }}>
-            <h3 className="font-bold text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", color: "var(--foreground)" }}>Delete User?</h3>
-            <p className="text-sm mb-6" style={{ color: "var(--muted-foreground)" }}>
-              This will permanently delete the user account. Their evaluations will remain in the system.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="flex-1">Cancel</Button>
-              <Button onClick={() => handleDelete(deleteConfirm)} className="flex-1 text-white" style={{ background: "oklch(0.65 0.22 15)", border: "none" }}>Delete</Button>
+        <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              Are you sure you want to delete this user? This action cannot be undone.
             </div>
-          </div>
-        </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+              <Button
+                onClick={() => handleDelete(deleteConfirm)}
+                className="text-white"
+                style={{ background: "oklch(0.65 0.22 15)", border: "none" }}
+              >
+                Delete
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

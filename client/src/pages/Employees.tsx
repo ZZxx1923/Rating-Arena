@@ -3,13 +3,13 @@
  * Design: Arctic Glass (Corporate Glassmorphism)
  * Admin: Full CRUD | User: View only
  */
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getEmployees, getDepartments, addEmployee, updateEmployee, deleteEmployee,
-  getEmployeeStats, getEvaluations, EVALUATION_QUESTIONS, type Employee
-} from "@/lib/store";
-import * as api from "@/lib/api";
+  apiGetEmployees, apiGetDepartments, apiCreateEmployee, apiUpdateEmployee, apiDeleteEmployee,
+  apiGetEvaluations, ApiEmployee, ApiDepartment, ApiEvaluation
+} from "@/lib/api";
+import { EVALUATION_QUESTIONS } from "@/lib/store"; // Keep constants
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,21 +27,47 @@ function EmployeeModal({
 }: {
   open: boolean;
   onClose: () => void;
-  employee: Employee | null;
-  departments: { id: string; name: string }[];
-  onSave: (data: Omit<Employee, "id" | "createdAt">) => void;
+  employee: ApiEmployee | null;
+  departments: ApiDepartment[];
+  onSave: (data: Omit<ApiEmployee, "id" | "created_at">) => Promise<void>;
 }) {
   const [name, setName] = useState(employee?.name || "");
+  const [nameEn, setNameEn] = useState(employee?.name_en || "");
   const [position, setPosition] = useState(employee?.position || "");
-  const [departmentId, setDepartmentId] = useState(employee?.departmentId || "");
+  const [departmentId, setDepartmentId] = useState(employee?.department_id || "");
   const [email, setEmail] = useState(employee?.email || "");
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (employee) {
+      setName(employee.name);
+      setNameEn(employee.name_en || "");
+      setPosition(employee.position);
+      setDepartmentId(employee.department_id || "");
+      setEmail(employee.email || "");
+    } else {
+      setName("");
+      setNameEn("");
+      setPosition("");
+      setDepartmentId("");
+      setEmail("");
+    }
+  }, [employee, open]);
+
+  const handleSave = async () => {
     if (!name.trim() || !position.trim() || !departmentId) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    onSave({ name: name.trim(), position: position.trim(), departmentId, email: email.trim() });
+    setLoading(true);
+    try {
+      await onSave({ name: name.trim(), name_en: nameEn.trim() || undefined, position: position.trim(), department_id: departmentId, email: email.trim() || undefined });
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save employee.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,6 +85,10 @@ function EmployeeModal({
           <div>
             <Label className="text-sm mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>Full Name *</Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. John Smith" />
+          </div>
+          <div>
+            <Label className="text-sm mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>Full Name (English)</Label>
+            <Input value={nameEn} onChange={e => setNameEn(e.target.value)} placeholder="e.g. John Smith (optional)" />
           </div>
           <div>
             <Label className="text-sm mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>Position *</Label>
@@ -82,13 +112,14 @@ function EmployeeModal({
             <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="employee@company.com" type="email" />
           </div>
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+            <Button variant="outline" onClick={onClose} className="flex-1" disabled={loading}>Cancel</Button>
             <Button
               onClick={handleSave}
               className="flex-1 text-white"
               style={{ background: "linear-gradient(135deg, oklch(0.60 0.22 264), oklch(0.55 0.20 280))", border: "none" }}
+              disabled={loading}
             >
-              {employee ? "Save Changes" : "Add Employee"}
+              {loading ? "Saving..." : (employee ? "Save Changes" : "Add Employee")}
             </Button>
           </div>
         </div>
@@ -97,10 +128,44 @@ function EmployeeModal({
   );
 }
 
-function EmployeeProfile({ employee, onClose }: { employee: Employee; onClose: () => void }) {
-  const stats = useMemo(() => getEmployeeStats(employee.id), [employee.id]);
-  const departments = getDepartments();
-  const deptName = departments.find(d => d.id === employee.departmentId)?.name || "—";
+function EmployeeProfile({
+  employee, onClose, evaluations, departments
+}: {
+  employee: ApiEmployee;
+  onClose: () => void;
+  evaluations: ApiEvaluation[];
+  departments: ApiDepartment[];
+}) {
+  const approvedEvals = useMemo(() => evaluations.filter(e => e.employee_id === employee.id && e.status === "approved"), [evaluations, employee.id]);
+  const deptName = departments.find(d => d.id === employee.department_id)?.name || "—";
+
+  const getEmployeeStats = useCallback(() => {
+    const totalEvaluations = approvedEvals.length;
+    let avgRating = 0;
+    const questionAverages: Record<string, number> = {};
+    const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    if (totalEvaluations > 0) {
+      const allRatings = approvedEvals.flatMap(ev => Object.values(ev.ratings));
+      avgRating = allRatings.reduce((sum, score) => sum + score, 0) / allRatings.length;
+
+      EVALUATION_QUESTIONS.forEach(q => {
+        const questionScores = approvedEvals.map(ev => ev.ratings[q.id]).filter(score => score !== undefined && score !== null);
+        if (questionScores.length > 0) {
+          questionAverages[q.id] = questionScores.reduce((sum, score) => sum + score, 0) / questionScores.length;
+        }
+      });
+
+      allRatings.forEach(score => {
+        if (score >= 1 && score <= 5) {
+          ratingDistribution[score]++;
+        }
+      });
+    }
+    return { totalEvaluations, avgRating, questionAverages, ratingDistribution };
+  }, [approvedEvals]);
+
+  const stats = useMemo(() => getEmployeeStats(), [getEmployeeStats]);
 
   const radarData = EVALUATION_QUESTIONS.map(q => ({
     subject: q.label.split(" ")[0],
@@ -111,14 +176,8 @@ function EmployeeProfile({ employee, onClose }: { employee: Employee; onClose: (
   const ratingColors = ["oklch(0.65 0.22 15)", "oklch(0.75 0.20 40)", "oklch(0.78 0.17 70)", "oklch(0.65 0.20 150)", "oklch(0.70 0.18 162)"];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "oklch(0 0 0 / 0.7)", backdropFilter: "blur(8px)" }}
-    >
-      <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl"
-        style={{ background: "oklch(0.16 0.018 264)", border: "1px solid oklch(1 0 0 / 0.12)" }}
-      >
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b" style={{ borderColor: "oklch(1 0 0 / 0.08)" }}>
           <div className="flex items-center gap-4">
@@ -145,7 +204,7 @@ function EmployeeProfile({ employee, onClose }: { employee: Employee; onClose: (
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Avg Rating", value: stats.avgRating || "—", color: "oklch(0.78 0.17 70)" },
+              { label: "Avg Rating", value: stats.avgRating ? stats.avgRating.toFixed(1) : "—", color: "oklch(0.78 0.17 70)" },
               { label: "Evaluations", value: stats.totalEvaluations, color: "oklch(0.60 0.22 264)" },
               { label: "Top Score", value: stats.avgRating >= 4 ? "High" : stats.avgRating >= 3 ? "Mid" : stats.avgRating > 0 ? "Low" : "—", color: "oklch(0.70 0.18 162)" },
             ].map(s => (
@@ -215,52 +274,91 @@ function EmployeeProfile({ employee, onClose }: { employee: Employee; onClose: (
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 export default function Employees() {
   const { isAdmin } = useAuth();
-  const [employees, setEmployees] = useState(() => getEmployees());
-  const departments = useMemo(() => getDepartments(), []);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
+  const [evaluations, setEvaluations] = useState<ApiEvaluation[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
-  const [profileEmployee, setProfileEmployee] = useState<Employee | null>(null);
+  const [editEmployee, setEditEmployee] = useState<ApiEmployee | null>(null);
+  const [profileEmployee, setProfileEmployee] = useState<ApiEmployee | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [fetchedEmployees, fetchedDepartments, fetchedEvaluations] = await Promise.all([
+        apiGetEmployees(),
+        apiGetDepartments(),
+        apiGetEvaluations(),
+      ]);
+      setEmployees(fetchedEmployees);
+      setDepartments(fetchedDepartments);
+      setEvaluations(fetchedEvaluations);
+    } catch (error) {
+      console.error("Failed to fetch employees data:", error);
+      toast.error("Failed to load data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const filtered = useMemo(() => {
     return employees.filter(e => {
       const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
-        e.position.toLowerCase().includes(search.toLowerCase());
-      const matchDept = deptFilter === "all" || e.departmentId === deptFilter;
+        e.position.toLowerCase().includes(search.toLowerCase()) ||
+        (e.name_en && e.name_en.toLowerCase().includes(search.toLowerCase()));
+      const matchDept = deptFilter === "all" || e.department_id === deptFilter;
       return matchSearch && matchDept;
     });
   }, [employees, search, deptFilter]);
 
-  const handleSave = (data: Omit<Employee, "id" | "createdAt">) => {
-    if (editEmployee) {
-      updateEmployee(editEmployee.id, data);
-      toast.success("Employee updated successfully");
-    } else {
-      addEmployee(data);
-      toast.success("Employee added successfully");
+  const handleSave = async (data: Omit<ApiEmployee, "id" | "created_at">) => {
+    try {
+      if (editEmployee) {
+        await apiUpdateEmployee(editEmployee.id, data);
+        toast.success("Employee updated successfully.");
+      } else {
+        await apiCreateEmployee(data);
+        toast.success("Employee added successfully.");
+      }
+      fetchAllData(); // Refresh data
+    } catch (error: any) {
+      console.error("Error saving employee:", error);
+      throw error; // Re-throw to be caught by EmployeeModal
     }
-    setEmployees(getEmployees());
-    setModalOpen(false);
-    setEditEmployee(null);
   };
 
-  const handleDelete = (id: string) => {
-    deleteEmployee(id);
-    setEmployees(getEmployees());
-    setDeleteConfirm(null);
-    toast.success("Employee deleted");
+  const handleDelete = async (id: string) => {
+    try {
+      await apiDeleteEmployee(id);
+      toast.success("Employee deleted.");
+      fetchAllData(); // Refresh data
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      toast.error("Failed to delete employee.");
+    }
   };
 
   const getDeptName = (id: string) => departments.find(d => d.id === id)?.name || "—";
+
+  if (loading) {
+    return <div className="text-center py-8">Loading employees...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -312,7 +410,6 @@ export default function Employees() {
       {/* Employee Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
         {filtered.map(emp => {
-          const stats = getEmployeeStats(emp.id);
           return (
             <div
               key={emp.id}
@@ -332,15 +429,17 @@ export default function Employees() {
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => { setEditEmployee(emp); setModalOpen(true); }}
-                      className="p-1.5 rounded-lg transition-colors"
+                      className="p-1.5 rounded-lg"
                       style={{ background: "oklch(0.60 0.22 264 / 0.1)" }}
+                      title="Edit employee"
                     >
                       <Edit2 className="w-3.5 h-3.5" style={{ color: "oklch(0.60 0.22 264)" }} />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(emp.id)}
-                      className="p-1.5 rounded-lg transition-colors"
+                      className="p-1.5 rounded-lg"
                       style={{ background: "oklch(0.65 0.22 15 / 0.1)" }}
+                      title="Delete employee"
                     >
                       <Trash2 className="w-3.5 h-3.5" style={{ color: "oklch(0.65 0.22 15)" }} />
                     </button>
@@ -348,32 +447,19 @@ export default function Employees() {
                 )}
               </div>
 
-              <h3 className="font-semibold text-sm mb-0.5" style={{ fontFamily: "'Sora', sans-serif", color: "var(--foreground)" }}>
+              <h3 className="font-bold text-base mb-1" style={{ fontFamily: "'Sora', sans-serif", color: "var(--foreground)" }}>
                 {emp.name}
               </h3>
-              <p className="text-xs mb-1" style={{ color: "oklch(0.60 0.22 264)" }}>{emp.position}</p>
-              <div className="flex items-center gap-1 mb-3">
-                <Building2 className="w-3 h-3" style={{ color: "var(--muted-foreground)" }} />
-                <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{getDeptName(emp.departmentId)}</span>
-              </div>
+              <p className="text-sm" style={{ color: "oklch(0.60 0.22 264)" }}>{emp.position}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{getDeptName(emp.department_id || '')}</p>
 
-              {emp.email && (
-                <div className="flex items-center gap-1 mb-3">
-                  <Mail className="w-3 h-3" style={{ color: "var(--muted-foreground)" }} />
-                  <span className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>{emp.email}</span>
-                </div>
-              )}
-
-              {/* Rating */}
-              <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                <div className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5" style={{ color: "oklch(0.78 0.17 70)" }} />
-                  <span className="text-sm font-bold font-mono" style={{ color: "var(--foreground)" }}>
-                    {stats.avgRating || "—"}
-                  </span>
-                </div>
+              <div className="flex items-center gap-1.5 mt-4">
+                <Star className="w-3.5 h-3.5" style={{ color: "oklch(0.78 0.17 70)" }} />
+                <span className="text-sm font-mono font-semibold" style={{ color: "var(--foreground)" }}>
+                  {(evaluations.filter(e => e.employee_id === emp.id && e.status === 'approved').flatMap(e => Object.values(e.ratings)).reduce((a, b) => a + b, 0) / (evaluations.filter(e => e.employee_id === emp.id && e.status === 'approved').flatMap(e => Object.values(e.ratings)).length || 1)).toFixed(1)}/5
+                </span>
                 <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                  {stats.totalEvaluations} eval{stats.totalEvaluations !== 1 ? "s" : ""}
+                  ({evaluations.filter(e => e.employee_id === emp.id && e.status === 'approved').length} evaluations)
                 </span>
               </div>
             </div>
@@ -399,37 +485,35 @@ export default function Employees() {
       )}
 
       {profileEmployee && (
-        <EmployeeProfile employee={profileEmployee} onClose={() => setProfileEmployee(null)} />
+        <EmployeeProfile
+          employee={profileEmployee}
+          onClose={() => setProfileEmployee(null)}
+          evaluations={evaluations}
+          departments={departments}
+        />
       )}
 
-      {/* Delete Confirm */}
       {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "oklch(0 0 0 / 0.7)", backdropFilter: "blur(8px)" }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl p-6"
-            style={{ background: "oklch(0.16 0.018 264)", border: "1px solid oklch(1 0 0 / 0.12)" }}
-          >
-            <h3 className="font-bold text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", color: "var(--foreground)" }}>
-              Delete Employee?
-            </h3>
-            <p className="text-sm mb-6" style={{ color: "var(--muted-foreground)" }}>
-              This action cannot be undone. All associated evaluations will remain but may reference a deleted employee.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="flex-1">Cancel</Button>
+        <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              Are you sure you want to delete this employee? This action cannot be undone.
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
               <Button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 text-white"
+                className="text-white"
                 style={{ background: "oklch(0.65 0.22 15)", border: "none" }}
               >
                 Delete
               </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

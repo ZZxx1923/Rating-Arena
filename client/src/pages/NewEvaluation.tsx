@@ -3,14 +3,14 @@
  * Design: Arctic Glass (Corporate Glassmorphism)
  * 1-5 rating system, anonymous option, optional comment
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getEmployees, getDepartments, addEvaluation, hasUserEvaluatedEmployee,
-  EVALUATION_QUESTIONS, RATING_LABELS
-} from "@/lib/store";
-import * as api from "@/lib/api";
+  apiGetEmployees, apiGetDepartments, apiSubmitEvaluation, apiGetEvaluations,
+  ApiEmployee, ApiDepartment, ApiEvaluation
+} from "@/lib/api";
+import { EVALUATION_QUESTIONS, RATING_LABELS } from "@/lib/store"; // Keep constants
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +27,9 @@ const RATING_COLORS: Record<number, string> = {
   5: "oklch(0.70 0.18 162)",
 };
 
-function RatingInput({ question, value, onChange }: {
+function RatingInput({
+  question, value, onChange
+}: {
   question: { id: string; label: string };
   value: number;
   onChange: (v: number) => void;
@@ -70,8 +72,10 @@ function RatingInput({ question, value, onChange }: {
 export default function NewEvaluation() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const employees = useMemo(() => getEmployees(), []);
-  const departments = useMemo(() => getDepartments(), []);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
+  const [evaluations, setEvaluations] = useState<ApiEvaluation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [step, setStep] = useState<"select" | "rate" | "done">("select");
   const [selectedDept, setSelectedDept] = useState("");
@@ -81,10 +85,36 @@ export default function NewEvaluation() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const deptEmployees = useMemo(() =>
-    selectedDept ? employees.filter(e => e.departmentId === selectedDept) : [],
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [fetchedEmployees, fetchedDepartments, fetchedEvaluations] = await Promise.all([
+          apiGetEmployees(),
+          apiGetDepartments(),
+          apiGetEvaluations(),
+        ]);
+        setEmployees(fetchedEmployees);
+        setDepartments(fetchedDepartments);
+        setEvaluations(fetchedEvaluations);
+      } catch (error) {
+        console.error("Failed to fetch data for new evaluation:", error);
+        toast.error("Failed to load necessary data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const deptEmployees = useMemo(
+    () => (selectedDept ? employees.filter(e => e.department_id === selectedDept) : []),
     [selectedDept, employees]
   );
+
+  const hasUserEvaluatedEmployee = (userId: string, employeeId: string) => {
+    return evaluations.some(evalItem => evalItem.user_id === userId && evalItem.employee_id === employeeId);
+  };
 
   const completedRatings = Object.keys(ratings).filter(k => ratings[k] > 0).length;
   const totalQuestions = EVALUATION_QUESTIONS.length;
@@ -95,8 +125,8 @@ export default function NewEvaluation() {
 
   const handleSelectNext = () => {
     if (!selectedDept) { toast.error("Please select a department"); return; }
-    if (!selectedEmployee) { toast.error("Please select an employee"); return; }
-    if (hasUserEvaluatedEmployee(user!.id, selectedEmployee)) {
+    if (!selectedEmployee) { toast.error("Please select an employee"); return; return; }
+    if (user && hasUserEvaluatedEmployee(user.id, selectedEmployee)) {
       toast.error("You have already submitted an evaluation for this employee.");
       return;
     }
@@ -110,20 +140,28 @@ export default function NewEvaluation() {
       return;
     }
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 800));
-    addEvaluation({
-      employeeId: selectedEmployee,
-      userId: user!.id,
-      isAnonymous,
-      ratings,
-      comment: comment.trim() || undefined,
-    });
-    setSubmitting(false);
-    setStep("done");
+    try {
+      await apiSubmitEvaluation({
+        employeeId: selectedEmployee,
+        isAnonymous,
+        ratings,
+        comment: comment.trim() || undefined,
+      });
+      setSubmitting(false);
+      setStep("done");
+    } catch (error) {
+      console.error("Failed to submit evaluation:", error);
+      toast.error("Failed to submit evaluation.");
+      setSubmitting(false);
+    }
   };
 
   const selectedEmpName = employees.find(e => e.id === selectedEmployee)?.name || "";
   const selectedDeptName = departments.find(d => d.id === selectedDept)?.name || "";
+
+  if (loading) {
+    return <div className="text-center py-8">Loading data...</div>; // Simple loading state
+  }
 
   if (step === "done") {
     return (
@@ -225,7 +263,7 @@ export default function NewEvaluation() {
                   <div className="px-3 py-2 text-sm" style={{ color: "var(--muted-foreground)" }}>No employees in this department</div>
                 ) : (
                   deptEmployees.map(e => {
-                    const alreadyEval = hasUserEvaluatedEmployee(user!.id, e.id);
+                    const alreadyEval = user ? hasUserEvaluatedEmployee(user.id, e.id) : false;
                     return (
                       <SelectItem key={e.id} value={e.id} disabled={alreadyEval}>
                         {e.name} — {e.position} {alreadyEval ? "(already evaluated)" : ""}
@@ -355,10 +393,8 @@ export default function NewEvaluation() {
                 </svg>
                 Submitting...
               </span>
-            ) : completedRatings < totalQuestions ? (
-              `Rate ${totalQuestions - completedRatings} more criteria to submit`
             ) : (
-              <>Submit Evaluation <CheckCircle className="w-4 h-4" /></>
+              "Submit Evaluation"
             )}
           </Button>
         </div>

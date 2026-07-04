@@ -31,14 +31,18 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600)); // simulate async
-    const success = login(username.trim(), password);
-    setLoading(false);
-    if (success) {
-      toast.success(t("welcomeBack"));
-      setLocation("/dashboard");
-    } else {
-      setError(t("invalidCredentials"));
+    try {
+      const success = await login(username.trim(), password);
+      if (success) {
+        toast.success(t("welcomeBack"));
+        setLocation("/dashboard");
+      } else {
+        setError(t("invalidCredentials"));
+      }
+    } catch (err: any) {
+      setError(err.message || t("invalidCredentials"));
+    } finally {
+      setLoading(false);
     }
   };
 

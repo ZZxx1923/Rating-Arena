@@ -24,6 +24,7 @@ import Users from "./pages/Users";
 import Evaluations from "./pages/Evaluations";
 import NewEvaluation from "./pages/NewEvaluation";
 import Analytics from "./pages/Analytics";
+import Questions from "./pages/Questions";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: {
@@ -77,6 +78,9 @@ function Router() {
       </Route>
       <Route path="/analytics">
         <ProtectedRoute component={Analytics} adminOnly />
+      </Route>
+      <Route path="/questions">
+        <ProtectedRoute component={Questions} adminOnly />
       </Route>
       <Route component={NotFound} />
     </Switch>

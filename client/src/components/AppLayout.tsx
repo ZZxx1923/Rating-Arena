@@ -31,6 +31,7 @@ const getNavItems = (t: any): NavItem[] => [
   { icon: <Building2 className="w-4 h-4" />, label: t("departments"), path: "/departments", adminOnly: true },
   { icon: <Users className="w-4 h-4" />, label: t("users"), path: "/users", adminOnly: true },
   { icon: <BarChart3 className="w-4 h-4" />, label: t("analytics"), path: "/analytics", adminOnly: true },
+  { icon: <Settings className="w-4 h-4" />, label: t("questions"), path: "/questions", adminOnly: true },
 ];
 
 interface AppLayoutProps {
