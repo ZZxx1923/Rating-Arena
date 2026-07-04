@@ -12,11 +12,13 @@
 
 ## الخطوة 2: إعداد Vercel
 1. قم بربط مستودع GitHub الخاص بك بـ Vercel.
-2. أضف متغيرات البيئة التالية في إعدادات Vercel:
+2. سيقوم Vercel بالتعرف تلقائياً على إعدادات Vite.
+3. أضف متغيرات البيئة التالية في إعدادات Vercel (Settings -> Environment Variables):
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `JWT_SECRET` (قم بتوليد مفتاح عشوائي طويل)
+   - `NODE_ENV` اضبطها على `production`
 
 ## الخطوة 3: النشر
 - بمجرد دفع الكود (Push) إلى GitHub، سيقوم Vercel ببناء ونشر التطبيق تلقائياً.
