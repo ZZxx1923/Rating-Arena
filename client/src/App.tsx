@@ -17,10 +17,13 @@ initializeLanguage();
 
 // Pages
 import Login from "./pages/Login";
+import LoginSupabase from "./pages/LoginSupabase";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import Departments from "./pages/Departments";
 import Users from "./pages/Users";
+import AdminUsers from "./pages/AdminUsers";
+import AdminEmployees from "./pages/AdminEmployees";
 import Evaluations from "./pages/Evaluations";
 import NewEvaluation from "./pages/NewEvaluation";
 import Analytics from "./pages/Analytics";
@@ -54,6 +57,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/login-supabase" component={LoginSupabase} />
       <Route path="/">
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}
       </Route>
@@ -68,6 +72,12 @@ function Router() {
       </Route>
       <Route path="/users">
         <ProtectedRoute component={Users} adminOnly />
+      </Route>
+      <Route path="/admin/users">
+        <ProtectedRoute component={AdminUsers} adminOnly />
+      </Route>
+      <Route path="/admin/employees">
+        <ProtectedRoute component={AdminEmployees} adminOnly />
       </Route>
       <Route path="/evaluations/new">
         <ProtectedRoute component={NewEvaluation} />
